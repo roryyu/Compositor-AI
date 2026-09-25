@@ -1,0 +1,29 @@
+{
+  "" : {
+    "diagnostics" : "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/.build/out/Intermediates.noindex/CompositorMCP.build/Debug/CompositorMCPTests-p.build/Objects-normal/arm64/CompositorMCPTests-primary.dia",
+    "emit-module-dependencies" : "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/.build/out/Intermediates.noindex/CompositorMCP.build/Debug/CompositorMCPTests-p.build/Objects-normal/arm64/CompositorMCPTests-primary-emit-module.d",
+    "emit-module-diagnostics" : "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/.build/out/Intermediates.noindex/CompositorMCP.build/Debug/CompositorMCPTests-p.build/Objects-normal/arm64/CompositorMCPTests-primary-emit-module.dia",
+    "pch" : "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/.build/out/Intermediates.noindex/CompositorMCP.build/Debug/CompositorMCPTests-p.build/Objects-normal/arm64/CompositorMCPTests-primary-Bridging-header.pch",
+    "swift-dependencies" : "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/.build/out/Intermediates.noindex/CompositorMCP.build/Debug/CompositorMCPTests-p.build/Objects-normal/arm64/CompositorMCPTests-primary.swiftdeps"
+  },
+  "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/.build/out/Intermediates.noindex/CompositorMCP.build/Debug/CompositorMCPTests-p.build/DerivedSources/test_entry_point.swift" : {
+    "const-values" : "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/.build/out/Intermediates.noindex/CompositorMCP.build/Debug/CompositorMCPTests-p.build/Objects-normal/arm64/test_entry_point.swiftconstvalues",
+    "dependencies" : "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/.build/out/Intermediates.noindex/CompositorMCP.build/Debug/CompositorMCPTests-p.build/Objects-normal/arm64/test_entry_point.d",
+    "diagnostics" : "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/.build/out/Intermediates.noindex/CompositorMCP.build/Debug/CompositorMCPTests-p.build/Objects-normal/arm64/test_entry_point.dia",
+    "index-unit-output-path" : "/CompositorMCP.build/Debug/CompositorMCPTests-p.build/Objects-normal/arm64/test_entry_point.o",
+    "llvm-bc" : "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/.build/out/Intermediates.noindex/CompositorMCP.build/Debug/CompositorMCPTests-p.build/Objects-normal/arm64/test_entry_point.bc",
+    "object" : "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/.build/out/Intermediates.noindex/CompositorMCP.build/Debug/CompositorMCPTests-p.build/Objects-normal/arm64/test_entry_point.o",
+    "swift-dependencies" : "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/.build/out/Intermediates.noindex/CompositorMCP.build/Debug/CompositorMCPTests-p.build/Objects-normal/arm64/test_entry_point.swiftdeps",
+    "swiftmodule" : "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/.build/out/Intermediates.noindex/CompositorMCP.build/Debug/CompositorMCPTests-p.build/Objects-normal/arm64/test_entry_point~partial.swiftmodule"
+  },
+  "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/Tests/CompositorMCPTests/MCPServerTests.swift" : {
+    "const-values" : "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/.build/out/Intermediates.noindex/CompositorMCP.build/Debug/CompositorMCPTests-p.build/Objects-normal/arm64/MCPServerTests.swiftconstvalues",
+    "dependencies" : "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/.build/out/Intermediates.noindex/CompositorMCP.build/Debug/CompositorMCPTests-p.build/Objects-normal/arm64/MCPServerTests.d",
+    "diagnostics" : "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/.build/out/Intermediates.noindex/CompositorMCP.build/Debug/CompositorMCPTests-p.build/Objects-normal/arm64/MCPServerTests.dia",
+    "index-unit-output-path" : "/CompositorMCP.build/Debug/CompositorMCPTests-p.build/Objects-normal/arm64/MCPServerTests.o",
+    "llvm-bc" : "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/.build/out/Intermediates.noindex/CompositorMCP.build/Debug/CompositorMCPTests-p.build/Objects-normal/arm64/MCPServerTests.bc",
+    "object" : "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/.build/out/Intermediates.noindex/CompositorMCP.build/Debug/CompositorMCPTests-p.build/Objects-normal/arm64/MCPServerTests.o",
+    "swift-dependencies" : "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/.build/out/Intermediates.noindex/CompositorMCP.build/Debug/CompositorMCPTests-p.build/Objects-normal/arm64/MCPServerTests.swiftdeps",
+    "swiftmodule" : "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/.build/out/Intermediates.noindex/CompositorMCP.build/Debug/CompositorMCPTests-p.build/Objects-normal/arm64/MCPServerTests~partial.swiftmodule"
+  }
+}

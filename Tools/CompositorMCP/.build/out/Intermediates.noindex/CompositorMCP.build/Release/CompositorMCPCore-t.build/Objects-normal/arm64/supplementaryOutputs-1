@@ -1,0 +1,12 @@
+{
+  "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/Sources/CompositorMCPCore/CompositorClient.swift" : {
+    "abi-baseline-json" : "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/.build/out/Intermediates.noindex/CompositorMCP.build/Release/CompositorMCPCore-t.build/Objects-normal/arm64/CompositorMCPCore.abi.json",
+    "const-values" : "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/.build/out/Intermediates.noindex/CompositorMCP.build/Release/CompositorMCPCore-t.build/Objects-normal/arm64/CompositorMCPCore-primary.swiftconstvalues",
+    "dependencies" : "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/.build/out/Intermediates.noindex/CompositorMCP.build/Release/CompositorMCPCore-t.build/Objects-normal/arm64/CompositorMCPCore-primary.d",
+    "diagnostics" : "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/.build/out/Intermediates.noindex/CompositorMCP.build/Release/CompositorMCPCore-t.build/Objects-normal/arm64/CompositorMCPCore-primary.dia",
+    "objc-header" : "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/.build/out/Intermediates.noindex/CompositorMCP.build/Release/CompositorMCPCore-t.build/Objects-normal/arm64/CompositorMCPCore-Swift.h",
+    "swiftdoc" : "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/.build/out/Intermediates.noindex/CompositorMCP.build/Release/CompositorMCPCore-t.build/Objects-normal/arm64/CompositorMCPCore.swiftdoc",
+    "swiftmodule" : "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/.build/out/Intermediates.noindex/CompositorMCP.build/Release/CompositorMCPCore-t.build/Objects-normal/arm64/CompositorMCPCore.swiftmodule",
+    "swiftsourceinfo" : "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/.build/out/Intermediates.noindex/CompositorMCP.build/Release/CompositorMCPCore-t.build/Objects-normal/arm64/CompositorMCPCore.swiftsourceinfo"
+  }
+}

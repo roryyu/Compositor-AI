@@ -13,11 +13,20 @@ struct AIPanelView: View {
             Text(modelName)
                 .font(.callout)
                 .foregroundStyle(.secondary)
-            TextEditor(text: $instruction)
-                .font(.body)
-                .frame(height: 76)
-                .padding(6)
-                .overlay(RoundedRectangle(cornerRadius: 6).stroke(.quaternary))
+            ZStack(alignment: .topLeading) {
+                if instruction.isEmpty {
+                    Text("Describe what to draw or change, e.g. \"Draw a black circle, 50px across.\"")
+                        .foregroundStyle(.tertiary)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 12)
+                        .allowsHitTesting(false)
+                }
+                TextEditor(text: $instruction)
+                    .font(.body)
+                    .frame(height: 76)
+                    .padding(6)
+            }
+            .overlay(RoundedRectangle(cornerRadius: 6).stroke(.quaternary))
             HStack {
                 Button("Run") {
                     agent.run(instruction)

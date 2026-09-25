@@ -203,6 +203,34 @@ struct AIToolDispatcherTests {
         #expect(layer.name == "Custom")
     }
 
+    @Test func createDocumentLifecycle() async throws {
+        let session = EditorSession()
+        let dispatcher = AIToolDispatcher(session: session)
+        let args = try #require(JSONValue.parse(#"{"width":500,"height":300}"#))
+
+        let created = await dispatcher.dispatch(name: "create_document", arguments: args)
+        #expect(created.success)
+        session.isProjectBusy = false
+        #expect(session.document?.width == 500)
+        #expect(session.document?.height == 300)
+
+        // A second call does not replace the open document.
+        let again = await dispatcher.dispatch(
+            name: "create_document",
+            arguments: try #require(JSONValue.parse(#"{"width":100,"height":100}"#)))
+        #expect(again.success)
+        session.isProjectBusy = false
+        #expect(session.document?.width == 500)
+
+        // Shape tools require the document.
+        let emptySession = EditorSession()
+        let emptyDispatcher = AIToolDispatcher(session: emptySession)
+        let shape = await emptyDispatcher.dispatch(
+            name: "draw_shape",
+            arguments: try #require(JSONValue.parse(#"{"kind":"Ellipse","rect":[0,0,10,10]}"#)))
+        #expect(!shape.success)
+    }
+
     @Test func drawsShapeLayer() async throws {
         let session = makeSession()
         let dispatcher = AIToolDispatcher(session: session)
@@ -294,5 +322,71 @@ struct AIToolDispatcherTests {
             name: "generate_image",
             arguments: JSONValue.parse(#"{"prompt":"a cat"}"#) ?? .emptyObject)
         #expect(!observation.success)
+    }
+}
+
+// MARK: - Edit agent end-to-end
+
+/// Replies to each request with the next scripted response, simulating the model's
+/// function-calling loop without any network access.
+actor ScriptedChatTransport: ChatTransport {
+    private var responses: [ChatResponse]
+    init(_ responses: [ChatResponse]) { self.responses = responses }
+
+    func send(_ request: ChatRequest) async throws -> ChatResponse {
+        guard !responses.isEmpty else { throw AIError.invalidResponse("unexpected extra request") }
+        return responses.removeFirst()
+    }
+}
+
+@MainActor
+struct EditAgentTests {
+    @Test func naturalLanguageDrawsBlackCircle() async throws {
+        let session = EditorSession()
+        session.createDocument(width: 400, height: 400)
+
+        let transport = ScriptedChatTransport([
+            ChatResponse(text: nil, toolCalls: [
+                ChatToolCall(id: "call-1", name: "get_canvas_state", arguments: .emptyObject),
+            ], finishReason: "tool_calls"),
+            ChatResponse(text: nil, toolCalls: [
+                ChatToolCall(id: "call-2", name: "draw_shape",
+                             arguments: try #require(JSONValue.parse("""
+                             {"kind":"Ellipse","rect":[100,100,50,50],"color":"black"}
+                             """))),
+            ], finishReason: "tool_calls"),
+            ChatResponse(text: nil, toolCalls: [
+                ChatToolCall(id: "call-3", name: "finish",
+                             arguments: try #require(JSONValue.parse(#"{"summary":"Drew a black circle."}"#))),
+            ], finishReason: "tool_calls"),
+        ])
+
+        let agent = EditAgent(session: session, transport: transport)
+        agent.run("I want to draw a black circle, diameter 50px.")
+
+        let deadline = ContinuousClock.now + .seconds(10)
+        while agent.outcome == .running {
+            if ContinuousClock.now > deadline { break }
+            try await Task.sleep(for: .milliseconds(20))
+        }
+
+        #expect(agent.outcome == .finished)
+        // The busy flag must be restored after the run.
+        #expect(session.isProjectBusy == false)
+        let shapeStep = agent.steps.first { $0.tool == "draw_shape" }
+        #expect(shapeStep?.success == true)
+
+        let layer = try #require(session.document?.layers.first)
+        #expect(layer.name == "Ellipse 1")
+        #expect(layer.origin == CGPoint(x: 100, y: 100))
+        #expect(layer.size == CGSize(width: 50, height: 50))
+        let style = try #require(layer.liveShape?.style)
+        #expect(style.kind == .ellipse)
+        #expect(style.red == 0 && style.green == 0 && style.blue == 0)
+
+        // The drawing is one undoable edit.
+        #expect(session.canUndo)
+        session.undo()
+        #expect(session.document?.layers.isEmpty == true)
     }
 }

@@ -1,0 +1,49 @@
+{
+  "" : {
+    "diagnostics" : "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/.build/out/Intermediates.noindex/CompositorMCP.build/Debug/CompositorMCPCore-t.build/Objects-normal/arm64/CompositorMCPCore-primary.dia",
+    "emit-module-dependencies" : "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/.build/out/Intermediates.noindex/CompositorMCP.build/Debug/CompositorMCPCore-t.build/Objects-normal/arm64/CompositorMCPCore-primary-emit-module.d",
+    "emit-module-diagnostics" : "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/.build/out/Intermediates.noindex/CompositorMCP.build/Debug/CompositorMCPCore-t.build/Objects-normal/arm64/CompositorMCPCore-primary-emit-module.dia",
+    "pch" : "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/.build/out/Intermediates.noindex/CompositorMCP.build/Debug/CompositorMCPCore-t.build/Objects-normal/arm64/CompositorMCPCore-primary-Bridging-header.pch",
+    "swift-dependencies" : "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/.build/out/Intermediates.noindex/CompositorMCP.build/Debug/CompositorMCPCore-t.build/Objects-normal/arm64/CompositorMCPCore-primary.swiftdeps"
+  },
+  "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/Sources/CompositorMCPCore/CompositorClient.swift" : {
+    "const-values" : "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/.build/out/Intermediates.noindex/CompositorMCP.build/Debug/CompositorMCPCore-t.build/Objects-normal/arm64/CompositorClient.swiftconstvalues",
+    "dependencies" : "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/.build/out/Intermediates.noindex/CompositorMCP.build/Debug/CompositorMCPCore-t.build/Objects-normal/arm64/CompositorClient.d",
+    "diagnostics" : "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/.build/out/Intermediates.noindex/CompositorMCP.build/Debug/CompositorMCPCore-t.build/Objects-normal/arm64/CompositorClient.dia",
+    "index-unit-output-path" : "/CompositorMCP.build/Debug/CompositorMCPCore-t.build/Objects-normal/arm64/CompositorClient.o",
+    "llvm-bc" : "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/.build/out/Intermediates.noindex/CompositorMCP.build/Debug/CompositorMCPCore-t.build/Objects-normal/arm64/CompositorClient.bc",
+    "object" : "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/.build/out/Intermediates.noindex/CompositorMCP.build/Debug/CompositorMCPCore-t.build/Objects-normal/arm64/CompositorClient.o",
+    "swift-dependencies" : "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/.build/out/Intermediates.noindex/CompositorMCP.build/Debug/CompositorMCPCore-t.build/Objects-normal/arm64/CompositorClient.swiftdeps",
+    "swiftmodule" : "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/.build/out/Intermediates.noindex/CompositorMCP.build/Debug/CompositorMCPCore-t.build/Objects-normal/arm64/CompositorClient~partial.swiftmodule"
+  },
+  "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/Sources/CompositorMCPCore/Endpoint.swift" : {
+    "const-values" : "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/.build/out/Intermediates.noindex/CompositorMCP.build/Debug/CompositorMCPCore-t.build/Objects-normal/arm64/Endpoint.swiftconstvalues",
+    "dependencies" : "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/.build/out/Intermediates.noindex/CompositorMCP.build/Debug/CompositorMCPCore-t.build/Objects-normal/arm64/Endpoint.d",
+    "diagnostics" : "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/.build/out/Intermediates.noindex/CompositorMCP.build/Debug/CompositorMCPCore-t.build/Objects-normal/arm64/Endpoint.dia",
+    "index-unit-output-path" : "/CompositorMCP.build/Debug/CompositorMCPCore-t.build/Objects-normal/arm64/Endpoint.o",
+    "llvm-bc" : "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/.build/out/Intermediates.noindex/CompositorMCP.build/Debug/CompositorMCPCore-t.build/Objects-normal/arm64/Endpoint.bc",
+    "object" : "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/.build/out/Intermediates.noindex/CompositorMCP.build/Debug/CompositorMCPCore-t.build/Objects-normal/arm64/Endpoint.o",
+    "swift-dependencies" : "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/.build/out/Intermediates.noindex/CompositorMCP.build/Debug/CompositorMCPCore-t.build/Objects-normal/arm64/Endpoint.swiftdeps",
+    "swiftmodule" : "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/.build/out/Intermediates.noindex/CompositorMCP.build/Debug/CompositorMCPCore-t.build/Objects-normal/arm64/Endpoint~partial.swiftmodule"
+  },
+  "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/Sources/CompositorMCPCore/JSONRPCMessage.swift" : {
+    "const-values" : "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/.build/out/Intermediates.noindex/CompositorMCP.build/Debug/CompositorMCPCore-t.build/Objects-normal/arm64/JSONRPCMessage.swiftconstvalues",
+    "dependencies" : "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/.build/out/Intermediates.noindex/CompositorMCP.build/Debug/CompositorMCPCore-t.build/Objects-normal/arm64/JSONRPCMessage.d",
+    "diagnostics" : "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/.build/out/Intermediates.noindex/CompositorMCP.build/Debug/CompositorMCPCore-t.build/Objects-normal/arm64/JSONRPCMessage.dia",
+    "index-unit-output-path" : "/CompositorMCP.build/Debug/CompositorMCPCore-t.build/Objects-normal/arm64/JSONRPCMessage.o",
+    "llvm-bc" : "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/.build/out/Intermediates.noindex/CompositorMCP.build/Debug/CompositorMCPCore-t.build/Objects-normal/arm64/JSONRPCMessage.bc",
+    "object" : "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/.build/out/Intermediates.noindex/CompositorMCP.build/Debug/CompositorMCPCore-t.build/Objects-normal/arm64/JSONRPCMessage.o",
+    "swift-dependencies" : "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/.build/out/Intermediates.noindex/CompositorMCP.build/Debug/CompositorMCPCore-t.build/Objects-normal/arm64/JSONRPCMessage.swiftdeps",
+    "swiftmodule" : "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/.build/out/Intermediates.noindex/CompositorMCP.build/Debug/CompositorMCPCore-t.build/Objects-normal/arm64/JSONRPCMessage~partial.swiftmodule"
+  },
+  "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/Sources/CompositorMCPCore/MCPServer.swift" : {
+    "const-values" : "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/.build/out/Intermediates.noindex/CompositorMCP.build/Debug/CompositorMCPCore-t.build/Objects-normal/arm64/MCPServer.swiftconstvalues",
+    "dependencies" : "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/.build/out/Intermediates.noindex/CompositorMCP.build/Debug/CompositorMCPCore-t.build/Objects-normal/arm64/MCPServer.d",
+    "diagnostics" : "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/.build/out/Intermediates.noindex/CompositorMCP.build/Debug/CompositorMCPCore-t.build/Objects-normal/arm64/MCPServer.dia",
+    "index-unit-output-path" : "/CompositorMCP.build/Debug/CompositorMCPCore-t.build/Objects-normal/arm64/MCPServer.o",
+    "llvm-bc" : "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/.build/out/Intermediates.noindex/CompositorMCP.build/Debug/CompositorMCPCore-t.build/Objects-normal/arm64/MCPServer.bc",
+    "object" : "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/.build/out/Intermediates.noindex/CompositorMCP.build/Debug/CompositorMCPCore-t.build/Objects-normal/arm64/MCPServer.o",
+    "swift-dependencies" : "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/.build/out/Intermediates.noindex/CompositorMCP.build/Debug/CompositorMCPCore-t.build/Objects-normal/arm64/MCPServer.swiftdeps",
+    "swiftmodule" : "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/.build/out/Intermediates.noindex/CompositorMCP.build/Debug/CompositorMCPCore-t.build/Objects-normal/arm64/MCPServer~partial.swiftmodule"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "" : {
+    "const-values" : "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/.build/out/Intermediates.noindex/CompositorMCP.build/Release/compositor-mcp-p.build/Objects-normal/arm64/compositor-mcp-primary.swiftconstvalues",
+    "dependencies" : "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/.build/out/Intermediates.noindex/CompositorMCP.build/Release/compositor-mcp-p.build/Objects-normal/arm64/compositor-mcp-primary.d",
+    "diagnostics" : "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/.build/out/Intermediates.noindex/CompositorMCP.build/Release/compositor-mcp-p.build/Objects-normal/arm64/compositor-mcp-primary.dia",
+    "emit-module-dependencies" : "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/.build/out/Intermediates.noindex/CompositorMCP.build/Release/compositor-mcp-p.build/Objects-normal/arm64/compositor-mcp-primary-emit-module.d",
+    "emit-module-diagnostics" : "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/.build/out/Intermediates.noindex/CompositorMCP.build/Release/compositor-mcp-p.build/Objects-normal/arm64/compositor-mcp-primary-emit-module.dia",
+    "pch" : "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/.build/out/Intermediates.noindex/CompositorMCP.build/Release/compositor-mcp-p.build/Objects-normal/arm64/compositor-mcp-primary-Bridging-header.pch",
+    "swift-dependencies" : "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/.build/out/Intermediates.noindex/CompositorMCP.build/Release/compositor-mcp-p.build/Objects-normal/arm64/compositor-mcp-primary.swiftdeps"
+  },
+  "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/Sources/compositor-mcp/main.swift" : {
+    "index-unit-output-path" : "/CompositorMCP.build/Release/compositor-mcp-p.build/Objects-normal/arm64/main.o",
+    "llvm-bc" : "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/.build/out/Intermediates.noindex/CompositorMCP.build/Release/compositor-mcp-p.build/Objects-normal/arm64/main.bc",
+    "object" : "/Users/roryyu/Downloads/code/mycode/Compositor/Tools/CompositorMCP/.build/out/Intermediates.noindex/CompositorMCP.build/Release/compositor-mcp-p.build/Objects-normal/arm64/main.o"
+  }
+}

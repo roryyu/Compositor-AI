@@ -1,0 +1,4 @@
+module CompositorMCPCore {
+header "CompositorMCPCore-Swift.h"
+export *
+}

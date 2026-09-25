@@ -71,6 +71,24 @@ All AI features live under the **AI** menu (AI Settings…, Generate Image… �
 - Analyze Canvas: ask a vision model questions about the current document
 - Edit with AI: an agent drives the editor itself through function calling — creating layers, painting, filling, selecting and transforming — showing each step in a panel. Every action is a normal undo step and can be reverted with ⌘Z
 
+### External control (MCP)
+The app runs a loopback control API (127.0.0.1, ephemeral port, per-launch token), and `Tools/CompositorMCP` is a small dependency-free bridge that speaks [MCP](https://modelcontextprotocol.io) so external agents such as OpenAI Codex (or ChatGPT, Claude, etc.) can operate the live document with the same tool set as the in-app agent. The bridge launches Compositor automatically if it isn't running.
+
+Build the bridge:
+
+```sh
+cd Tools/CompositorMCP && swift build -c release
+```
+
+Register it with Codex, e.g. in `~/.codex/config.toml`:
+
+```toml
+[mcp_servers.compositor]
+command = "/absolute/path/to/Tools/CompositorMCP/.build/release/compositor-mcp"
+```
+
+It can also be used from the shell: `compositor-mcp health | tools | state | call <tool> '[json arguments]'`.
+
 ## Requirements
 
 - macOS 26.5 or later

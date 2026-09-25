@@ -29,6 +29,7 @@ final class AIToolDispatcher {
     func dispatch(name: String, arguments: JSONValue) async -> ToolObservation {
         switch name {
         case "get_canvas_state": perform { stateTool() }
+        case "create_document": perform { try createDocument(arguments) }
         case "analyze_image": await performAsync { try await analyzeImage(arguments) }
         case "add_blank_layer": perform { try addBlankLayer(arguments) }
         case "generate_image": await performAsync { try await generateImage(arguments) }
@@ -170,6 +171,20 @@ final class AIToolDispatcher {
         CanvasStateSnapshot.capture(session).json.encodedString
     }
 
+    private func createDocument(_ args: JSONValue) throws -> String {
+        guard session.document == nil else { return "A document is already open." }
+        guard let widthValue = args["width"]?.double, let heightValue = args["height"]?.double else {
+            throw AIError.invalidResponse("width and height are required.")
+        }
+        let width = Int(widthValue), height = Int(heightValue)
+        guard (1...DocumentLimits.maxSide).contains(width),
+              (1...DocumentLimits.maxSide).contains(height) else {
+            throw AIError.invalidResponse("width and height must be between 1 and \(DocumentLimits.maxSide).")
+        }
+        session.createDocument(width: width, height: height)
+        return "Created a \(width)x\(height) document."
+    }
+
     private func analyzeImage(_ args: JSONValue) async throws -> String {
         guard let transport else { throw AIError.notConfigured("a vision model") }
         guard let document = session.document else { throw AIError.noDocument }
@@ -191,11 +206,8 @@ final class AIToolDispatcher {
     }
 
     private func addBlankLayer(_ args: JSONValue) throws -> String {
-        session.addBlankLayer()
+        session.addBlankLayer(name: args["name"]?.string)
         guard let id = session.activeLayerID else { throw AIError.invalidResponse("the layer could not be added.") }
-        if let name = args["name"]?.string?.trimmingCharacters(in: .whitespacesAndNewlines), !name.isEmpty {
-            session.renameLayer(id, to: name)
-        }
         return "Added layer \(CanvasStateSnapshot.shortID(id))."
     }
 
@@ -354,6 +366,7 @@ final class AIToolDispatcher {
     }
 
     private func drawShape(_ args: JSONValue) throws -> String {
+        guard session.document != nil else { throw AIError.noDocument }
         guard let rect = Self.rect(args["rect"]) else { throw AIError.invalidResponse("a valid rect is required.") }
         let kind = ShapeKind(rawValue: args["kind"]?.string ?? "Rectangle") ?? .rectangle
         let paintColor = color(args)
@@ -368,6 +381,7 @@ final class AIToolDispatcher {
     }
 
     private func addText(_ args: JSONValue) throws -> String {
+        guard session.document != nil else { throw AIError.noDocument }
         guard let point = Self.point(args["point"]) else { throw AIError.invalidResponse("a valid point is required.") }
         var style = LayerTextStyle()
         style.content = args["text"]?.string ?? "Text"
@@ -387,6 +401,7 @@ final class AIToolDispatcher {
     }
 
     private func drawGradient(_ args: JSONValue) throws -> String {
+        guard session.document != nil else { throw AIError.noDocument }
         guard let rect = Self.rect(args["rect"]),
               let from = Self.point(args["from"]),
               let to = Self.point(args["to"]) else {

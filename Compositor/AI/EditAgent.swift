@@ -44,6 +44,7 @@ final class EditAgent: ObservableObject {
 
     Rules:
     - Call get_canvas_state first unless the state was just given to you.
+    - If no document is open, call create_document before anything else.
     - Make each edit a separate tool call. Each edit is undoable on its own.
     - A failed tool returns an error; read it and try a different approach.
     - Draw onto raster layers; add a blank layer first when one is needed.

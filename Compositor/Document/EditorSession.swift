@@ -608,12 +608,15 @@ final class EditorSession {
         return selectionAmountOperation == nil && textDraft == nil && document != nil && brushStroke == nil && warpStroke == nil && !isProjectBusy && !isImporting && !showsNewDocument && !showsImporter && renamingLayerID == nil && transformEdit == nil && cropRect == nil && gradientEdit == nil && pixelMove == nil && hueSaturation == nil && levels == nil && filterEdit == nil && adjustmentEditingID == nil
     }
 
-    func addBlankLayer() {
+    func addBlankLayer(name suppliedName: String? = nil) {
         guard canEditLayers, let document else { return }
         let names = Set(document.layers.map(\.name))
         var number = 1
         while names.contains("Layer \(number)") { number += 1 }
         var layer = ImageLayer(name: "Layer \(number)", blankSize: document.size)
+        if let suppliedName = suppliedName?.trimmingCharacters(in: .whitespacesAndNewlines), !suppliedName.isEmpty {
+            layer.name = suppliedName
+        }
         layer.parentID = activeLayer?.isGroup == true ? activeLayerID : activeLayer?.parentID
         if let parent = layer.parentID { collapsedGroupIDs.remove(parent) }
         var insertion = document.layers.firstIndex { $0.id == activeLayerID }.map { $0 + 1 } ?? document.layers.count

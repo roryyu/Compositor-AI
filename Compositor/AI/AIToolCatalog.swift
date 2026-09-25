@@ -8,6 +8,13 @@ nonisolated enum AIToolCatalog {
                        description: "Return the current canvas state: size, layers, active layer, and selection. Call this first and whenever you need fresh ids or bounds.",
                        parameters: .schema([:])),
 
+        ToolDefinition(name: "create_document",
+                       description: "Create a new empty canvas document when none is open.",
+                       parameters: .schema([
+                        "width": .integerProperty("Canvas width in pixels.", minimum: 1, maximum: 30000),
+                        "height": .integerProperty("Canvas height in pixels.", minimum: 1, maximum: 30000),
+                       ], required: ["width", "height"])),
+
         ToolDefinition(name: "analyze_image",
                        description: "Ask the vision model about part of the image, e.g. locating a subject or reading colors.",
                        parameters: .schema([

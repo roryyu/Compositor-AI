@@ -1,0 +1,10 @@
+Target dependency graph (4 targets)
+Target 'AllExcludingTests' in project 'Aggregate'
+➜ Explicit dependency on target 'CompositorMCPCore-product' in project 'CompositorMCP'
+➜ Explicit dependency on target 'compositor-mcp-product' in project 'CompositorMCP'
+➜ Explicit dependency on target 'CompositorMCPCore' in project 'CompositorMCP'
+Target 'compositor-mcp-product' in project 'CompositorMCP'
+➜ Explicit dependency on target 'CompositorMCPCore' in project 'CompositorMCP'
+Target 'CompositorMCPCore-product' in project 'CompositorMCP'
+➜ Explicit dependency on target 'CompositorMCPCore' in project 'CompositorMCP'
+Target 'CompositorMCPCore' in project 'CompositorMCP' (no dependencies)

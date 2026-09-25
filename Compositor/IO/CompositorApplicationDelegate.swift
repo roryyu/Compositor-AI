@@ -6,6 +6,8 @@ final class CompositorApplicationDelegate: NSObject, NSApplicationDelegate {
     var session: EditorSession { workspace.current.session }
     var projects: ProjectController { workspace.current.controller }
     var showEditor: (() -> Void)?
+    /// Loopback control API for external agents (MCP bridge).
+    var controlServer: LocalControlServer?
     /// Checks the update feed and installs new versions (Sparkle). Started only after launch: its first-run prompt,
     /// shown during launch, kept the editor window from ever opening.
     let updater = SPUStandardUpdaterController(startingUpdater: false, updaterDelegate: nil, userDriverDelegate: nil)
@@ -28,6 +30,16 @@ final class CompositorApplicationDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         DispatchQueue.main.asyncAfter(deadline: .now() + 1) { [updater] in updater.startUpdater() }
+        Task { @MainActor [workspace] in
+            let server = LocalControlServer(workspace: workspace)
+            do {
+                try await server.start()
+                self.controlServer = server
+            } catch {
+                // The editor keeps working without the bridge; log for diagnosis.
+                FileHandle.standardError.write(Data("Compositor control server failed to start: \(error)\n".utf8))
+            }
+        }
     }
 
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
