@@ -4,7 +4,7 @@ build/
 DerivedData/
 *.xcarchive
 *.dmg
-
+.build/
 # Xcode per-user state
 xcuserdata/
 *.xcuserstate
