@@ -80,14 +80,25 @@ Build the bridge:
 cd Tools/CompositorMCP && swift build -c release
 ```
 
-Register it with Codex, e.g. in `~/.codex/config.toml`:
+Register it with Codex in `~/.codex/config.toml`:
 
 ```toml
 [mcp_servers.compositor]
 command = "/absolute/path/to/Tools/CompositorMCP/.build/release/compositor-mcp"
 ```
 
-It can also be used from the shell: `compositor-mcp health | tools | state | call <tool> '[json arguments]'`.
+#### Install the agent skill (recommended)
+
+`Tools/CompositorMCP/SKILL.md` is an agent-facing guide: when to trigger, the state-first workflow, tool conventions (short layer ids, top-left document coordinates, color formats) and common recipes. Install it so Codex knows how to drive Compositor well:
+
+```sh
+mkdir -p ~/.codex/skills/compositor
+cp Tools/CompositorMCP/SKILL.md ~/.codex/skills/compositor/SKILL.md
+```
+
+Then restart Codex. The MCP server provides the tools; the skill tells the agent how and when to use them — both are needed for instructions like "draw a black 50 px circle in Compositor" to work reliably.
+
+It can also be used from the shell without any configuration: `compositor-mcp health | tools | state | call <tool> '[json arguments]'`.
 
 ## Requirements
 
