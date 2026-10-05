@@ -17,7 +17,7 @@
 | 撤销/历史 | `beginEdit("名称") / endEdit()` 快照整个 `CanvasDocument` | AI 的每一步变更各包一对 begin/end,天然可逐步撤销 |
 | 忙碌互斥 | `isProjectBusy / showsBusy / waitForProjectAccess()` | AI 网络请求与批量操作期间复用该机制,防止并发编辑 |
 | 图层模型 | `ImageLayer`(asset/transform/opacity/blendMode/mask/adjustment/shape/text/effects),`CanvasDocument.layers` 自底向上 | Agent 工具目录直接映射这些字段 |
-| 调整/滤镜 | `AdjustmentKind`(hsv/levels/curves/exposure/gradientMap/grain/addNoise/gaussianBlur/motionBlur/invert/blackWhite/colorBalance)、`FilterKind`(vignette/bloomGlow/tonalContrast/lensCorrection/cameraRaw/removeBackground/contentAwareFill…) | Agent 的 `apply_adjustment` / `apply_filter` 工具按枚举分发 |
+| 调整/滤镜 | `AdjustmentKind`(hsv/levels/curves/exposure/gradientMap/grain/addNoise/gaussianBlur/motionBlur/invert/blackWhite/colorBalance/vibrance/shadowsHighlights/posterize/threshold/desaturate/photoFilter/channelMixer)、`FilterKind`(vignette/bloomGlow/tonalContrast/lensCorrection/cameraRaw/removeBackground/contentAwareFill/sharpen/unsharpMask/boxBlur/discBlur/tiltShift/zoomBlur/pixelate/crystallize/pointillize/twirl/ripple…) | Agent 的 `apply_adjustment` / `apply_filter` 工具按枚举分发 |
 | 选区/绘制 | `selectAll/invertSelection/promptSelectionAmount(.feather…)`,`BrushSettings`(diameter/hardness/opacity/color/smoothing),形状与文字图层(`shape`/`text`) | Agent 绘图工具复用同一路径 |
 | 本地 AI 先例 | `SubjectRemoval`(Vision `VNGenerateForegroundInstanceMaskRequest`) | 证明 AI 能力可无缝融入;Agent 的 `select_subject` 直接复用 |
 | 尺寸限制 | `DocumentLimits.maxSide = 30000`,`documentPixelBudget`(按机器内存) | 生图结果超限时等比缩放后再插入 |
@@ -235,14 +235,15 @@ struct VisionService {
 | `draw_shape(kind: rect/ellipse, rect, fill?, stroke?, color)` | Shape 工具的图层 `shape` 字段 |
 | `add_text(text, point, fontSize, color)` | `TypeTool` 的 text 图层 |
 | `draw_gradient(kind, from, to, rect)` | Gradient 工具路径 |
-| `apply_adjustment(layer, kind, params)` | `AdjustmentKind` + 各 Settings 结构(hsv/levels/curves/exposure/blur/noise/invert…) |
-| `apply_filter(layer, kind, params)` | `FilterKind`(vignette/bloom/tonalContrast/removeBackground…) |
+| `apply_adjustment(layer, kind, params)` | `AdjustmentKind` + 各 Settings 结构(hsv/levels/curves/exposure/blur/noise/invert/vibrance/shadowsHighlights/posterize/threshold/desaturate/photoFilter/channelMixer…),params 按 kind 取 hue/saturation/lightness/exposure/amount/radius/angle/distance |
+| `apply_filter(layer, kind, params)` | `FilterKind`(vignette/bloom/tonalContrast/lensCorrection/removeBackground/sharpen/boxBlur/discBlur/tiltShift/zoomBlur/pixelate/crystallize/pointillize/twirl/ripple…),params 取 radius/angle/distance/amount/distortion |
+| `set_layer_effects(layer, kind, …)` / `layer_mask(layer, action, …)` / `content_aware_fill()` | 图层效果(`LayerEffectKind`)、蒙版增删反相、选区内容识别填充(实施期在批 2 之外补齐) |
 
 批 3 —— 选区、画布与联动:
 | 工具 | 映射 |
 |---|---|
 | `set_selection(shape: all/rect/ellipse, rect?, feather?)` | `selectAll` + 选区 API / `promptSelectionAmount(.feather)` |
-| `modify_selection(expand/contract/invert/none)` | 同上系列 |
+| `modify_selection(expand/contract/invert/deselect/feather, amount)` | 同上系列 |
 | `select_subject()` | 现有 Vision `selectSubject()` |
 | `crop(rect)` / `resize_canvas(w,h)` / `resize_image(w,h)` / `trim()` | Crop / CanvasSize / ImageSize / Trim 路径 |
 | `generate_image(prompt, size)` | 内部走 3.3,把能力闭环给 Agent("给海报加一张 AI 生成的云背景") |

@@ -1,5 +1,7 @@
 # Compositor-AI
 
+[简体中文](README_zh.md)
+
 Adobe Photoshop costs too much and tools like GIMP don’t feel familiar enough for me to stay in flow. That’s why I built Compositor.
 
 The goal was to create a full-featured image editor that is completely free and open source. I use Photoshop for compositing and post-processing, so Compositor is built around that workflow - with the tools needed to create a pixel-perfect final image.
@@ -14,7 +16,7 @@ Because it’s open source, you can download the Xcode project and add, remove, 
 - Layers and folders, with opacity and Photoshop's full set of blend modes in its order — a folder's opacity dims everything inside it
 - Layer masks: paint, fill, invert, blur and feather them; link or unlink them to transform a mask on its own
 - Clipping masks and folder masks
-- Adjustment layers: Hue/Saturation, Levels, Curves, Exposure, Gradient Map, Grain, Black & White, Color Balance, Invert, Gaussian Blur, Motion Blur and Noise
+- Adjustment layers: Hue/Saturation, Levels, Curves, Exposure, Gradient Map, Grain, Black & White, Color Balance, Vibrance, Channel Mixer, Photo Filter, Shadows / Highlights, Desaturate, Posterize, Threshold, Invert, Gaussian Blur, Motion Blur and Noise
 - Layer effects: Stroke, Drop Shadow, Color Overlay, Inner Shadow, Outer Glow and Inner Glow, rendered on the GPU and editable at any time
 - Merge Down, Merge Layers and Merge Group (⌘E)
 - Duplicate, rename inline, reorder and nest by drag and drop; Option-drag to duplicate; a right-click menu in the Layers panel
@@ -46,8 +48,10 @@ Because it’s open source, you can download the Xcode project and add, remove, 
 
 ### Adjustments and filters
 - Camera Raw filter: light, color, curves, color mixer, color grading, detail, optics and geometry, in a panel beside the canvas
-- Levels (with Auto), Curves, Hue/Saturation, Exposure, Gradient Map, Grain, Black & White, Color Balance and Invert
+- Levels (with Auto), Curves, Hue/Saturation, Exposure, Gradient Map, Grain, Black & White, Color Balance, Vibrance, Channel Mixer, Photo Filter, Shadows / Highlights, Desaturate, Posterize, Threshold and Invert
 - Gaussian Blur and Motion Blur that spread past a layer's edges
+- Sharpen, Unsharp Mask, Box Blur, Disc Blur, Tilt-Shift and Zoom Blur
+- Pixelate, Crystallize and Pointillize; Twirl and Ripple distortions
 - Add Noise, Vignette, Bloom / Glow, Tonal Contrast, Lens Correction and Remove Background
 - Live previews, limited to the selection when there is one
 
@@ -69,7 +73,7 @@ All AI features live under the **AI** menu (AI Settings…, Generate Image… �
 - Separate configurations for vision/chat and image generation — different base URL, API key and model for each; API keys are stored in the system Keychain and a Test Connection button checks each setup
 - Text-to-image generation (⇧⌘G): describe what you want and the result is inserted as a new layer, scaled to the canvas; supports OpenAI Images, Volcengine Seedream, DashScope Wanx and Gemini
 - Analyze Canvas: ask a vision model questions about the current document
-- Edit with AI: an agent drives the editor itself through function calling — creating layers, painting, filling, selecting and transforming — showing each step in a panel. Every action is a normal undo step and can be reverted with ⌘Z
+- Edit with AI: an agent drives the editor itself through function calling — creating layers, painting, filling, selecting (with expand, contract and feather), transforming, adding and inverting layer masks, applying layer effects, content-aware fill, and any of the filters and adjustments with their parameters — showing each step in a panel. Every action is a normal undo step and can be reverted with ⌘Z
 
 ### External control (MCP)
 The app runs a loopback control API (127.0.0.1, ephemeral port, per-launch token), and `Tools/CompositorMCP` is a small dependency-free bridge that speaks [MCP](https://modelcontextprotocol.io) so external agents such as OpenAI Codex (or ChatGPT, Claude, etc.) can operate the live document with the same tool set as the in-app agent. The bridge launches Compositor automatically if it isn't running.

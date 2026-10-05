@@ -7,6 +7,9 @@ nonisolated enum AdjustmentKind: String, Codable, CaseIterable, Sendable {
     case gaussianBlur = "Gaussian Blur", motionBlur = "Motion Blur"
     case invert = "Invert"
     case blackWhite = "Black & White", colorBalance = "Color Balance"
+    case vibrance = "Vibrance", shadowsHighlights = "Shadows / Highlights"
+    case posterize = "Posterize", threshold = "Threshold", desaturate = "Desaturate"
+    case photoFilter = "Photo Filter", channelMixer = "Channel Mixer"
     var symbol: String {
         switch self {
         case .curves: return "point.topleft.down.to.point.bottomright.curvepath"
@@ -21,6 +24,13 @@ nonisolated enum AdjustmentKind: String, Codable, CaseIterable, Sendable {
         case .invert: return "circle.righthalf.filled"
         case .blackWhite: return "circle.filled.pattern.diagonalline.rectangle"
         case .colorBalance: return "scale.3d"
+        case .vibrance: return "sparkles"
+        case .shadowsHighlights: return "sun.max"
+        case .posterize: return "square.grid.2x2"
+        case .threshold: return "circle.dashed"
+        case .desaturate: return "drop"
+        case .photoFilter: return "camera.filters"
+        case .channelMixer: return "square.grid.3x3"
         }
     }
     /// The filter panel that edits this kind; Levels and Hue/Saturation have panels of their own.
@@ -31,6 +41,13 @@ nonisolated enum AdjustmentKind: String, Codable, CaseIterable, Sendable {
         case .curves: return .curves
         case .blackWhite: return .blackWhite
         case .colorBalance: return .colorBalance
+        case .vibrance: return .vibrance
+        case .shadowsHighlights: return .shadowsHighlights
+        case .posterize: return .posterize
+        case .threshold: return .threshold
+        case .desaturate: return .desaturate
+        case .photoFilter: return .photoFilter
+        case .channelMixer: return .channelMixer
         case .exposure: return .exposure
         case .gradientMap: return .gradientMap
         case .grain: return .grain
@@ -61,6 +78,13 @@ nonisolated struct LayerAdjustment: Codable, Equatable, Sendable {
     var grainSettings: GrainSettings?
     var blackWhiteSettings: BlackWhiteSettings?
     var colorBalanceSettings: ColorBalanceSettings?
+    var vibranceSettings: VibranceSettings?
+    var shadowsHighlightsSettings: ShadowsHighlightsSettings?
+    var posterizeSettings: PosterizeSettings?
+    var thresholdSettings: ThresholdSettings?
+    var desaturateSettings: DesaturateSettings?
+    var photoFilterSettings: PhotoFilterSettings?
+    var channelMixerSettings: ChannelMixerSettings?
     // Optional so projects created before blur adjustments continue to decode unchanged.
     var blurRadius: Double?
     var motionAngle: Double?
@@ -88,6 +112,34 @@ nonisolated struct LayerAdjustment: Codable, Equatable, Sendable {
     var colorBalance: ColorBalanceSettings {
         get { colorBalanceSettings ?? ColorBalanceSettings() }
         set { colorBalanceSettings = newValue }
+    }
+    var vibrance: VibranceSettings {
+        get { vibranceSettings ?? VibranceSettings() }
+        set { vibranceSettings = newValue }
+    }
+    var shadowsHighlights: ShadowsHighlightsSettings {
+        get { shadowsHighlightsSettings ?? ShadowsHighlightsSettings() }
+        set { shadowsHighlightsSettings = newValue }
+    }
+    var posterize: PosterizeSettings {
+        get { posterizeSettings ?? PosterizeSettings() }
+        set { posterizeSettings = newValue }
+    }
+    var threshold: ThresholdSettings {
+        get { thresholdSettings ?? ThresholdSettings() }
+        set { thresholdSettings = newValue }
+    }
+    var desaturate: DesaturateSettings {
+        get { desaturateSettings ?? DesaturateSettings() }
+        set { desaturateSettings = newValue }
+    }
+    var photoFilter: PhotoFilterSettings {
+        get { photoFilterSettings ?? PhotoFilterSettings() }
+        set { photoFilterSettings = newValue }
+    }
+    var channelMixer: ChannelMixerSettings {
+        get { channelMixerSettings ?? ChannelMixerSettings() }
+        set { channelMixerSettings = newValue }
     }
     var gaussianRadius: Double {
         get { blurRadius ?? 10 }
@@ -122,6 +174,7 @@ nonisolated struct LayerAdjustment: Codable, Equatable, Sendable {
         switch kind {
         case .gaussianBlur: return CGFloat(gaussianRadius * 3 + 2)
         case .motionBlur: return CGFloat(resolvedMotionDistance / 2 + 2)
+        case .shadowsHighlights: return CGFloat(shadowsHighlights.radius)
         default: return 0
         }
     }
@@ -134,6 +187,8 @@ nonisolated struct LayerAdjustment: Codable, Equatable, Sendable {
         && resolvedHSV.bands.values.allSatisfy { $0.handles.allSatisfy { $0.isFinite } }
         && levels.ranges.count == 4 && levels.ranges.allSatisfy { $0 == $0.normalized } && curves.isValid
         && exposure.isValid && gradientMap.isValid && grain.isValid && blackWhite.isValid && colorBalance.isValid
+        && vibrance.isValid && shadowsHighlights.isValid && posterize.isValid && threshold.isValid
+        && desaturate.isValid && photoFilter.isValid && channelMixer.isValid
         && gaussianRadius.isFinite && (0.1...250).contains(gaussianRadius)
         && resolvedMotionAngle.isFinite && (-90...90).contains(resolvedMotionAngle)
         && resolvedMotionDistance.isFinite && (1...2000).contains(resolvedMotionDistance)
@@ -151,6 +206,13 @@ nonisolated struct LayerAdjustment: Codable, Equatable, Sendable {
         case .curves: return try curves.apply(image)
         case .blackWhite: return try blackWhite.apply(image)
         case .colorBalance: return try colorBalance.apply(image)
+        case .vibrance: return try vibrance.apply(image)
+        case .shadowsHighlights: return try shadowsHighlights.apply(image)
+        case .posterize: return try posterize.apply(image)
+        case .threshold: return try threshold.apply(image)
+        case .desaturate: return try desaturate.apply(image)
+        case .photoFilter: return try photoFilter.apply(image)
+        case .channelMixer: return try channelMixer.apply(image)
         case .exposure: return try exposure.apply(image)
         case .gradientMap: return try gradientMap.apply(image)
         case .grain:

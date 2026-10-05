@@ -323,6 +323,151 @@ struct AIToolDispatcherTests {
             arguments: JSONValue.parse(#"{"prompt":"a cat"}"#) ?? .emptyObject)
         #expect(!observation.success)
     }
+
+    @Test func setsLayerEffects() async throws {
+        let session = makeSession()
+        let dispatcher = AIToolDispatcher(session: session)
+        // Effects require a layer with pixels; a shape provides one.
+        let shape = await dispatcher.dispatch(
+            name: "draw_shape",
+            arguments: try #require(JSONValue.parse(#"{"kind":"Rectangle","rect":[100,100,200,200],"color":"red"}"#)))
+        #expect(shape.success)
+        session.isProjectBusy = false
+
+        let observation = await dispatcher.dispatch(
+            name: "set_layer_effects",
+            arguments: try #require(JSONValue.parse(#"{"kind":"Drop Shadow","distance":12,"blur":10,"opacity":0.5,"color":"red"}"#)))
+        #expect(observation.success)
+        session.isProjectBusy = false
+        let effects = try #require(session.activeLayer?.effects)
+        let shadow = try #require(effects.shadow)
+        #expect(shadow.distance == 12)
+        #expect(shadow.blur == 10)
+        #expect(shadow.opacity == 0.5)
+        #expect(shadow.red == 1 && shadow.green == 0 && shadow.blue == 0)
+        // The effect is one undoable edit.
+        #expect(session.canUndo)
+    }
+
+    @Test func layerMaskAddInvertDelete() async throws {
+        let session = makeSession()
+        session.addBlankLayer()
+        let dispatcher = AIToolDispatcher(session: session)
+
+        let add = await dispatcher.dispatch(
+            name: "layer_mask",
+            arguments: try #require(JSONValue.parse(#"{"action":"add","reveal":true}"#)))
+        #expect(add.success)
+        session.isProjectBusy = false
+        #expect(session.activeLayer?.mask != nil)
+
+        let invert = await dispatcher.dispatch(
+            name: "layer_mask",
+            arguments: try #require(JSONValue.parse(#"{"action":"invert"}"#)))
+        #expect(invert.success)
+        session.isProjectBusy = false
+        #expect(session.activeLayer?.mask != nil)
+
+        let delete = await dispatcher.dispatch(
+            name: "layer_mask",
+            arguments: try #require(JSONValue.parse(#"{"action":"delete"}"#)))
+        #expect(delete.success)
+        session.isProjectBusy = false
+        #expect(session.activeLayer?.mask == nil)
+    }
+
+    @Test func modifySelectionExpandContractFeather() async throws {
+        let session = makeSession()
+        let dispatcher = AIToolDispatcher(session: session)
+        let set = await dispatcher.dispatch(
+            name: "set_selection",
+            arguments: try #require(JSONValue.parse(#"{"shape":"rect","rect":[100,100,100,100]}"#)))
+        #expect(set.success)
+        session.isProjectBusy = false
+        let before = try #require(session.selection?.path.boundingBoxOfPath)
+        #expect(before.width == 100)
+
+        let expand = await dispatcher.dispatch(
+            name: "modify_selection",
+            arguments: try #require(JSONValue.parse(#"{"action":"expand","amount":10}"#)))
+        #expect(expand.success)
+        session.isProjectBusy = false
+        let afterExpand = try #require(session.selection?.path.boundingBoxOfPath)
+        #expect(afterExpand.width > before.width)
+
+        let feather = await dispatcher.dispatch(
+            name: "modify_selection",
+            arguments: try #require(JSONValue.parse(#"{"action":"feather","amount":5}"#)))
+        #expect(feather.success)
+        session.isProjectBusy = false
+        #expect((session.selection?.feather ?? 0) > 0)
+
+        // Expand/contract/feather need an amount.
+        let missing = await dispatcher.dispatch(
+            name: "modify_selection",
+            arguments: try #require(JSONValue.parse(#"{"action":"contract"}"#)))
+        #expect(!missing.success)
+    }
+
+    @Test func contentAwareFillFillsSelection() async throws {
+        let session = makeSession()
+        let dispatcher = AIToolDispatcher(session: session)
+        let shape = await dispatcher.dispatch(
+            name: "draw_shape",
+            arguments: try #require(JSONValue.parse(#"{"kind":"Rectangle","rect":[100,100,200,200],"color":"red"}"#)))
+        #expect(shape.success)
+        session.isProjectBusy = false
+        let sel = await dispatcher.dispatch(
+            name: "set_selection",
+            arguments: try #require(JSONValue.parse(#"{"shape":"rect","rect":[160,160,40,40]}"#)))
+        #expect(sel.success)
+        session.isProjectBusy = false
+
+        let fill = await dispatcher.dispatch(name: "content_aware_fill", arguments: .emptyObject)
+        #expect(fill.success)
+        session.isProjectBusy = false
+        #expect(session.activeLayer?.asset != nil)
+        #expect(session.canUndo)
+    }
+
+    @Test func applyAdjustmentWithParams() async throws {
+        let session = makeSession()
+        let dispatcher = AIToolDispatcher(session: session)
+        let observation = await dispatcher.dispatch(
+            name: "apply_adjustment",
+            arguments: try #require(JSONValue.parse(#"{"kind":"Hue/Saturation","params":{"hue":30,"saturation":20,"lightness":-10}}"#)))
+        #expect(observation.success)
+        session.isProjectBusy = false
+        let adjustment = try #require(session.activeLayer?.adjustment)
+        #expect(adjustment.kind == .hsv)
+        #expect(adjustment.hue == 30)
+        #expect(adjustment.saturation == 20)
+        #expect(adjustment.lightness == -10)
+
+        // Out-of-range params are rejected rather than silently clamped.
+        let other = makeSession()
+        let otherDispatcher = AIToolDispatcher(session: other)
+        let bad = await otherDispatcher.dispatch(
+            name: "apply_adjustment",
+            arguments: try #require(JSONValue.parse(#"{"kind":"Gaussian Blur","params":{"radius":999}}"#)))
+        #expect(!bad.success)
+    }
+
+    @Test func applyLensCorrectionFilter() async throws {
+        let session = makeSession()
+        let dispatcher = AIToolDispatcher(session: session)
+        let shape = await dispatcher.dispatch(
+            name: "draw_shape",
+            arguments: try #require(JSONValue.parse(#"{"kind":"Rectangle","rect":[50,50,200,200],"color":"red"}"#)))
+        #expect(shape.success)
+        session.isProjectBusy = false
+        let filter = await dispatcher.dispatch(
+            name: "apply_filter",
+            arguments: try #require(JSONValue.parse(#"{"kind":"Lens Correction","distortion":40}"#)))
+        #expect(filter.success)
+        session.isProjectBusy = false
+        #expect(session.activeLayer?.asset != nil)
+    }
 }
 
 // MARK: - Edit agent end-to-end

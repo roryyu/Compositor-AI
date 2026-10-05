@@ -61,6 +61,39 @@ struct FilterSheet: View {
                 control("Amount", \.grain.amount, range: GrainSettings.amountRange, unit: "", decimals: 0, logarithmic: false)
                 control("Size", \.grain.size, range: GrainSettings.sizeRange, unit: "px", decimals: 1, logarithmic: true)
                 control("Roughness", \.grain.roughness, range: GrainSettings.roughnessRange, unit: "", decimals: 0, logarithmic: false)
+            case .vibrance:
+                control("Vibrance", \.vibrance.amount, range: VibranceSettings.range, unit: "", decimals: 0, logarithmic: false)
+                control("Saturation", \.vibrance.saturation, range: VibranceSettings.range, unit: "", decimals: 0, logarithmic: false)
+            case .shadowsHighlights:
+                control("Shadows", \.shadowsHighlights.shadows, range: ShadowsHighlightsSettings.range, unit: "%", decimals: 0, logarithmic: false)
+                control("Highlights", \.shadowsHighlights.highlights, range: ShadowsHighlightsSettings.range, unit: "%", decimals: 0, logarithmic: false)
+                control("Radius", \.shadowsHighlights.radius, range: ShadowsHighlightsSettings.radiusRange, unit: "px", decimals: 0, logarithmic: false)
+            case .posterize:
+                control("Levels", \.posterize.levels, range: PosterizeSettings.levelsRange, unit: "", decimals: 0, logarithmic: false)
+            case .threshold:
+                control("Level", \.threshold.level, range: ThresholdSettings.levelRange, unit: "", decimals: 0, logarithmic: false)
+            case .desaturate:
+                control("Amount", \.desaturate.amount, range: DesaturateSettings.range, unit: "%", decimals: 0, logarithmic: false)
+            case .photoFilter:
+                control("Hue", \.photoFilter.hue, range: 0...360, unit: "°", decimals: 0, logarithmic: false)
+                control("Density", \.photoFilter.density, range: PhotoFilterSettings.densityRange, unit: "%", decimals: 0, logarithmic: false)
+                Toggle("Preserve Luminosity", isOn: flag(\.photoFilter.preserveLuminosity))
+                    .help("Put each pixel's brightness back afterwards, so the filter only recolors")
+            case .channelMixer:
+                Text("Red").font(.headline)
+                control("Red", \.channelMixer.redRed, range: ChannelMixerSettings.range, unit: "%", decimals: 0, logarithmic: false)
+                control("Green", \.channelMixer.redGreen, range: ChannelMixerSettings.range, unit: "%", decimals: 0, logarithmic: false)
+                control("Blue", \.channelMixer.redBlue, range: ChannelMixerSettings.range, unit: "%", decimals: 0, logarithmic: false)
+                Text("Green").font(.headline)
+                control("Red", \.channelMixer.greenRed, range: ChannelMixerSettings.range, unit: "%", decimals: 0, logarithmic: false)
+                control("Green", \.channelMixer.greenGreen, range: ChannelMixerSettings.range, unit: "%", decimals: 0, logarithmic: false)
+                control("Blue", \.channelMixer.greenBlue, range: ChannelMixerSettings.range, unit: "%", decimals: 0, logarithmic: false)
+                Text("Blue").font(.headline)
+                control("Red", \.channelMixer.blueRed, range: ChannelMixerSettings.range, unit: "%", decimals: 0, logarithmic: false)
+                control("Green", \.channelMixer.blueGreen, range: ChannelMixerSettings.range, unit: "%", decimals: 0, logarithmic: false)
+                control("Blue", \.channelMixer.blueBlue, range: ChannelMixerSettings.range, unit: "%", decimals: 0, logarithmic: false)
+                Toggle("Monochrome", isOn: flag(\.channelMixer.monochrome))
+                    .help("Send the Red row to all three channels, for a custom black-and-white conversion")
             case .removeBackground:
                 Text("Hide the background behind a layer mask, keeping the foreground subjects. The pixels stay, so the background can be painted back at any time.")
                     .fixedSize(horizontal: false, vertical: true)
@@ -130,6 +163,31 @@ struct FilterSheet: View {
                 control("Remove Distortion", \.distortion, range: -100...100, unit: "", decimals: 0, logarithmic: false)
                 Text("Positive straightens lines that bow outward (barrel); negative, lines that bow inward (pincushion).")
                     .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            case .sharpen:
+                control("Amount", \.sharpenAmount, range: 0...100, unit: "%", decimals: 0, logarithmic: false)
+            case .unsharpMask:
+                control("Amount", \.unsharpAmount, range: 0...500, unit: "%", decimals: 0, logarithmic: false)
+                control("Radius", \.radius, range: 0.1...100, unit: "px", decimals: 1, logarithmic: true)
+            case .boxBlur:
+                control("Radius", \.radius, range: 0.1...250, unit: "px", decimals: 1, logarithmic: true)
+            case .discBlur:
+                control("Radius", \.radius, range: 0.1...250, unit: "px", decimals: 1, logarithmic: true)
+            case .tiltShift:
+                control("Radius", \.radius, range: 0.1...100, unit: "px", decimals: 1, logarithmic: true)
+                Text("Blurs above and below a horizontal band across the middle, for a miniature effect.")
+                    .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            case .zoomBlur:
+                control("Amount", \.zoomAmount, range: 0...200, unit: "", decimals: 0, logarithmic: false)
+            case .pixelate:
+                control("Cell Size", \.pixelateScale, range: 1...100, unit: "px", decimals: 0, logarithmic: true)
+            case .crystallize:
+                control("Radius", \.crystallizeRadius, range: 1...100, unit: "px", decimals: 0, logarithmic: true)
+            case .pointillize:
+                control("Radius", \.pointillizeRadius, range: 1...100, unit: "px", decimals: 0, logarithmic: true)
+            case .twirl:
+                control("Angle", \.twirlAngle, range: -360...360, unit: "°", decimals: 0, logarithmic: false)
+            case .ripple:
+                control("Scale", \.rippleScale, range: 0...100, unit: "", decimals: 0, logarithmic: false)
             }
             Toggle("Preview", isOn: Binding(get: { edit?.preview ?? true },
                                             set: { session.updateFilter(settings, preview: $0) }))

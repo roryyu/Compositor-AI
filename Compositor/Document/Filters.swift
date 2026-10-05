@@ -12,6 +12,17 @@ nonisolated enum FilterKind: String, CaseIterable, Sendable {
     case bloomGlow = "Bloom / Glow"
     case tonalContrast = "Tonal Contrast"
     case lensCorrection = "Lens Correction"
+    case sharpen = "Sharpen"
+    case unsharpMask = "Unsharp Mask"
+    case boxBlur = "Box Blur"
+    case discBlur = "Disc Blur"
+    case tiltShift = "Tilt-Shift"
+    case zoomBlur = "Zoom Blur"
+    case pixelate = "Pixelate"
+    case crystallize = "Crystallize"
+    case pointillize = "Pointillize"
+    case twirl = "Twirl"
+    case ripple = "Ripple"
     case cameraRaw = "Camera Raw Filter"
     case removeBackground = "Remove Background"
     case contentAwareFill = "Content-Aware Fill"
@@ -21,11 +32,20 @@ nonisolated enum FilterKind: String, CaseIterable, Sendable {
     case grain = "Grain"
     case blackWhite = "Black & White"
     case colorBalance = "Color Balance"
+    case vibrance = "Vibrance"
+    case shadowsHighlights = "Shadows / Highlights"
+    case posterize = "Posterize"
+    case threshold = "Threshold"
+    case desaturate = "Desaturate"
+    case photoFilter = "Photo Filter"
+    case channelMixer = "Channel Mixer"
     var isAutomatic: Bool { self == .contentAwareFill || self == .removeBackground }
     /// Color adjustments: in the Image menu (and editable as adjustment layers), not under Filter.
     var isImageAdjustment: Bool {
         self == .curves || self == .exposure || self == .gradientMap || self == .grain
-            || self == .blackWhite || self == .colorBalance
+            || self == .blackWhite || self == .colorBalance || self == .vibrance || self == .shadowsHighlights
+            || self == .posterize || self == .threshold || self == .desaturate || self == .photoFilter
+            || self == .channelMixer
     }
 }
 
@@ -69,12 +89,32 @@ nonisolated struct FilterSettings: Equatable, Sendable {
     /// Lens Correction's Remove Distortion, −100–100: positive straightens barrel distortion
     /// (lines bowing outward), negative straightens pincushion (lines bowing inward).
     var distortion: Double = 0
+    /// Sharpen (CISharpenLuminance) strength, 0–100 mapped to Core Image's 0–2.
+    var sharpenAmount: Double = 50
+    /// Unsharp Mask intensity as a percentage, 0–500; its radius reuses `radius`.
+    var unsharpAmount: Double = 100
+    /// Zoom Blur's radial amount, 0–200.
+    var zoomAmount: Double = 20
+    /// Pixelate cell size, Crystallize / Pointillize cell radius, 1–100.
+    var pixelateScale: Double = 12
+    var crystallizeRadius: Double = 12
+    var pointillizeRadius: Double = 12
+    /// Twirl rotation in degrees, −360–360; Ripple wave scale, 0–100. Both take their radius from the image size.
+    var twirlAngle: Double = 180
+    var rippleScale: Double = 40
     var curves = CurvesSettings()
     var exposure = ExposureSettings()
     var gradientMap = GradientMapSettings()
     var grain = GrainSettings()
     var blackWhite = BlackWhiteSettings()
     var colorBalance = ColorBalanceSettings()
+    var vibrance = VibranceSettings()
+    var shadowsHighlights = ShadowsHighlightsSettings()
+    var posterize = PosterizeSettings()
+    var threshold = ThresholdSettings()
+    var desaturate = DesaturateSettings()
+    var photoFilter = PhotoFilterSettings()
+    var channelMixer = ChannelMixerSettings()
     var cameraRaw = CameraRawSettings()
     /// Remove Background: Basic is the quick subject mask; Advanced refines it (see the three settings below).
     var backgroundQuality: BackgroundQuality = .basic
@@ -107,12 +147,27 @@ nonisolated struct FilterSettings: Equatable, Sendable {
         result.tonalMidtones = clamp(tonalMidtones, -100...100, 60)
         result.tonalHighlights = clamp(tonalHighlights, -100...100, 30)
         result.distortion = clamp(distortion, -100...100, 0)
+        result.sharpenAmount = clamp(sharpenAmount, 0...100, 50)
+        result.unsharpAmount = clamp(unsharpAmount, 0...500, 100)
+        result.zoomAmount = clamp(zoomAmount, 0...200, 20)
+        result.pixelateScale = clamp(pixelateScale, 1...100, 12)
+        result.crystallizeRadius = clamp(crystallizeRadius, 1...100, 12)
+        result.pointillizeRadius = clamp(pointillizeRadius, 1...100, 12)
+        result.twirlAngle = clamp(twirlAngle, -360...360, 180)
+        result.rippleScale = clamp(rippleScale, 0...100, 40)
         result.refineEdges = clamp(refineEdges, 0...40, 12)
         result.matteContrast = clamp(matteContrast, 0...100, 25)
         result.shiftEdge = clamp(shiftEdge, -10...10, 0)
         result.exposure = exposure.normalized
         result.gradientMap = gradientMap.normalized
         result.grain = grain.normalized
+        result.vibrance = vibrance.normalized
+        result.shadowsHighlights = shadowsHighlights.normalized
+        result.posterize = posterize.normalized
+        result.threshold = threshold.normalized
+        result.desaturate = desaturate.normalized
+        result.photoFilter = photoFilter.normalized
+        result.channelMixer = channelMixer.normalized
         result.cameraRaw = cameraRaw.normalized
         return result
     }
@@ -188,6 +243,13 @@ nonisolated enum PixelFilter {
         case .gradientMap: image = try settings.gradientMap.apply(job.image)
         case .blackWhite: image = try settings.blackWhite.apply(job.image)
         case .colorBalance: image = try settings.colorBalance.apply(job.image)
+        case .vibrance: image = try settings.vibrance.apply(job.image)
+        case .shadowsHighlights: image = try settings.shadowsHighlights.apply(job.image)
+        case .posterize: image = try settings.posterize.apply(job.image)
+        case .threshold: image = try settings.threshold.apply(job.image)
+        case .desaturate: image = try settings.desaturate.apply(job.image)
+        case .photoFilter: image = try settings.photoFilter.apply(job.image)
+        case .channelMixer: image = try settings.channelMixer.apply(job.image)
         case .cameraRaw: image = try settings.cameraRaw.apply(job.image, clipping: job.cameraRawClipping, scale: job.scale, seed: job.seed,
                                                                 visualizePointColor: job.visualizesPointColor, sharpenMask: job.showsSharpenMask)
         // Grain sits in layer pixels; the job's seed gives each application its own pattern.
@@ -260,6 +322,72 @@ nonisolated enum PixelFilter {
                          width, height, source.bytesPerRow, settings.distortion / 100 * lensStrength)
             guard let corrected = destination.makeImage() else { throw ExportError.render }
             image = corrected
+        case .sharpen:
+            let sharpened = edges.applyingFilter("CISharpenLuminance", parameters: [
+                kCIInputSharpnessKey: settings.sharpenAmount / 50,
+            ])
+            image = try PixelAdjust.render(sharpened.cropped(to: extent), width: width, height: height, isMask: false)
+        case .unsharpMask:
+            let unsharp = edges.applyingFilter("CIUnsharpMask", parameters: [
+                kCIInputRadiusKey: settings.radius * job.scale,
+                kCIInputIntensityKey: settings.unsharpAmount / 100,
+            ])
+            image = try PixelAdjust.render(unsharp.cropped(to: extent), width: width, height: height, isMask: false)
+        case .boxBlur:
+            let blurred = edges.applyingFilter("CIBoxBlur", parameters: [kCIInputRadiusKey: settings.radius * job.scale])
+            image = try PixelAdjust.render(blurred.cropped(to: extent), width: width, height: height, isMask: false)
+        case .discBlur:
+            let blurred = edges.applyingFilter("CIDiscBlur", parameters: [kCIInputRadiusKey: settings.radius * job.scale])
+            image = try PixelAdjust.render(blurred.cropped(to: extent), width: width, height: height, isMask: false)
+        case .tiltShift:
+            let mid = CGFloat(height) / 2
+            let blurred = edges.applyingFilter("CITiltShift", parameters: [
+                kCIInputRadiusKey: settings.radius * job.scale,
+                "inputPoint0": CIVector(cgPoint: CGPoint(x: 0, y: mid)),
+                "inputPoint1": CIVector(cgPoint: CGPoint(x: CGFloat(width), y: mid)),
+            ])
+            image = try PixelAdjust.render(blurred.cropped(to: extent), width: width, height: height, isMask: false)
+        case .zoomBlur:
+            let blurred = edges.applyingFilter("CIZoomBlur", parameters: [
+                kCIInputCenterKey: CIVector(cgPoint: CGPoint(x: CGFloat(width) / 2, y: CGFloat(height) / 2)),
+                kCIInputAmountKey: settings.zoomAmount * job.scale,
+            ])
+            image = try PixelAdjust.render(blurred.cropped(to: extent), width: width, height: height, isMask: false)
+        case .pixelate:
+            let pixellated = edges.applyingFilter("CIPixellate", parameters: [
+                kCIInputScaleKey: max(1, settings.pixelateScale) * job.scale,
+                kCIInputCenterKey: CIVector(cgPoint: CGPoint(x: CGFloat(width) / 2, y: CGFloat(height) / 2)),
+            ])
+            image = try PixelAdjust.render(pixellated.cropped(to: extent), width: width, height: height, isMask: false)
+        case .crystallize:
+            let crystallized = edges.applyingFilter("CICrystallize", parameters: [
+                kCIInputRadiusKey: max(1, settings.crystallizeRadius) * job.scale,
+                kCIInputCenterKey: CIVector(cgPoint: CGPoint(x: CGFloat(width) / 2, y: CGFloat(height) / 2)),
+            ])
+            image = try PixelAdjust.render(crystallized.cropped(to: extent), width: width, height: height, isMask: false)
+        case .pointillize:
+            let pointillized = edges.applyingFilter("CIPointillize", parameters: [
+                kCIInputRadiusKey: max(1, settings.pointillizeRadius) * job.scale,
+                kCIInputCenterKey: CIVector(cgPoint: CGPoint(x: CGFloat(width) / 2, y: CGFloat(height) / 2)),
+            ])
+            image = try PixelAdjust.render(pointillized.cropped(to: extent), width: width, height: height, isMask: false)
+        case .twirl:
+            let reach = min(CGFloat(width), CGFloat(height)) * 0.6
+            let twirled = edges.applyingFilter("CITwirlDistortion", parameters: [
+                kCIInputCenterKey: CIVector(cgPoint: CGPoint(x: CGFloat(width) / 2, y: CGFloat(height) / 2)),
+                kCIInputRadiusKey: reach,
+                kCIInputAngleKey: settings.twirlAngle * .pi / 180,
+            ])
+            image = try PixelAdjust.render(twirled.cropped(to: extent), width: width, height: height, isMask: false)
+        case .ripple:
+            let reach = min(CGFloat(width), CGFloat(height)) * 0.6
+            let rippled = edges.applyingFilter("CIWaterRipple", parameters: [
+                kCIInputCenterKey: CIVector(cgPoint: CGPoint(x: CGFloat(width) / 2, y: CGFloat(height) / 2)),
+                kCIInputRadiusKey: reach,
+                kCIInputScaleKey: settings.rippleScale,
+                "inputTime": 4.0,
+            ])
+            image = try PixelAdjust.render(rippled.cropped(to: extent), width: width, height: height, isMask: false)
         }
         guard let selection = job.selection else { return image }
         return try PixelAdjust.blend(image, over: job.image, through: selection, pixelToDocument: job.mapping, isMask: false)
@@ -375,6 +503,9 @@ final class FilterEdit {
         case .gaussianBlur: return CGFloat(settings.radius * 3 + 2)
         case .motionBlur: return CGFloat(settings.distance / 2 + 2)
         case .bloomGlow: return CGFloat(settings.bloomRadius * 3 + 2)
+        case .boxBlur, .tiltShift: return CGFloat(settings.radius * 3 + 2)
+        case .discBlur: return CGFloat(settings.radius * 2 + 2)
+        case .zoomBlur: return CGFloat(min(settings.zoomAmount, 200) + 2)
         default: return 0
         }
     }
@@ -607,6 +738,7 @@ extension EditorSession {
         do {
             let grown = edit.grownTransform
             let spreads = edit.kind == .gaussianBlur || edit.kind == .motionBlur || edit.kind == .bloomGlow
+                || edit.kind == .boxBlur || edit.kind == .discBlur || edit.kind == .tiltShift || edit.kind == .zoomBlur
             let made = try await Task.detached(priority: .userInitiated) { () -> (asset: ImportedImage, transform: LayerTransform?) in
                 var image = try cached ?? PixelFilter.run(job)
                 var placed = grown

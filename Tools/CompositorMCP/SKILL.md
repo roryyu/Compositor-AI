@@ -42,14 +42,14 @@ $B call draw_shape '{"kind":"Ellipse","rect":[0,0,50,50],"color":"black"}'
 
 **Document:** `create_document` (width, height) · `resize_canvas` (layers keep position) · `resize_image` (scales everything) · `crop` (rect) · `trim`
 
-**Layers:** `add_blank_layer` (optional name) · `duplicate_layer` · `delete_layer` · `set_layer_properties` (opacity 0–1, blend_mode, visible, name) · `reorder_layer` (up/down) · `group_layers` · `merge_layers` · `transform_layer` (dx, dy, scale, rotation°)
+**Layers:** `add_blank_layer` (optional name) · `duplicate_layer` · `delete_layer` · `set_layer_properties` (opacity 0–1, blend_mode, visible, name) · `reorder_layer` (up/down) · `group_layers` · `merge_layers` · `transform_layer` (dx, dy, scale, rotation°) · `set_layer_effects` (layer style: kind Stroke|Drop Shadow|Color Overlay|Inner Shadow|Outer Glow|Inner Glow, plus color/size/opacity/angle/distance/blur/inside as applicable) · `layer_mask` (action add|delete|invert, reveal for add)
 
 **Draw** (all take `color` as a CSS name or `#rrggbb`; `draw_shape`/`draw_gradient` create their own layer):
 `draw_shape` (kind Rectangle|Ellipse, rect [x,y,w,h], corner_radius for rects) · `draw_stroke` (points [[x,y]…], diameter, hardness, opacity) · `add_text` (text, point, font_size, font_name) · `draw_gradient` (kind linear|radial, rect, from, to) · `fill_layer` (target layer|selection)
 
-**Select:** `set_selection` (all|rect|ellipse, rect, feather) · `modify_selection` (invert|deselect) · `select_subject`
+**Select:** `set_selection` (all|rect|ellipse, rect, feather) · `modify_selection` (invert|deselect|expand|contract|feather, amount in px) · `content_aware_fill` (fills the current selection from its surroundings) · `select_subject`
 
-**Effects:** `apply_filter` (Gaussian Blur, Motion Blur, Add Noise, Vignette, Bloom / Glow, Tonal Contrast, Remove Background — with radius/angle/distance/amount as applicable) · `apply_adjustment` (adds an adjustment layer) · `flip` (canvas|layers, horizontal|vertical)
+**Effects:** `apply_filter` (Gaussian Blur, Motion Blur, Add Noise, Vignette, Bloom / Glow, Tonal Contrast, Lens Correction, Remove Background, Sharpen, Unsharp Mask, Box Blur, Disc Blur, Tilt-Shift, Zoom Blur, Pixelate, Crystallize, Pointillize, Twirl, Ripple — with radius/angle/distance/amount/distortion as applicable) · `apply_adjustment` (adds an adjustment layer: any adjustment kind, optional params hue/saturation/lightness/exposure/amount/radius/angle/distance) · `flip` (canvas|layers, horizontal|vertical)
 
 **AI:** `analyze_image` (target canvas|active_layer, question in English — needs the vision model configured) · `generate_image` (prompt in English — needs the image model configured; inserts as a new centered layer)
 

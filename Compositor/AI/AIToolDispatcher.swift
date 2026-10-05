@@ -36,6 +36,8 @@ final class AIToolDispatcher {
         case "duplicate_layer": perform { try duplicateLayer(arguments) }
         case "delete_layer": perform { try deleteLayer(arguments) }
         case "set_layer_properties": perform { try setLayerProperties(arguments) }
+        case "set_layer_effects": perform { try setLayerEffects(arguments) }
+        case "layer_mask": await performAsync { try await layerMask(arguments) }
         case "reorder_layer": perform { try reorderLayer(arguments) }
         case "group_layers": perform { try groupLayers(arguments) }
         case "merge_layers": perform { try mergeLayers(arguments) }
@@ -49,6 +51,7 @@ final class AIToolDispatcher {
         case "draw_gradient": perform { try drawGradient(arguments) }
         case "apply_adjustment": perform { try applyAdjustment(arguments) }
         case "apply_filter": await performAsync { try await applyFilter(arguments) }
+        case "content_aware_fill": await performAsync { try await contentAwareFill(arguments) }
         case "set_selection": perform { try setSelection(arguments) }
         case "modify_selection": perform { try modifySelection(arguments) }
         case "select_subject": await performAsync { try await selectSubject() }
@@ -108,7 +111,10 @@ final class AIToolDispatcher {
     }
 
     /// Resolves the `color`/`red,green,blue` arguments, falling back to the foreground color.
-    private func color(_ args: JSONValue) -> PaletteColor {
+    private func color(_ args: JSONValue) -> PaletteColor { optionalColor(args) ?? session.foregroundColor }
+
+    /// The `color`/`red,green,blue` arguments when given, or nil so an existing color stays untouched.
+    private func optionalColor(_ args: JSONValue) -> PaletteColor? {
         if let text = args["color"]?.string?.trimmingCharacters(in: .whitespaces), !text.isEmpty {
             if let hex = Self.parseHexColor(text) { return hex }
             if let named = Self.namedColor(text) { return named }
@@ -116,7 +122,7 @@ final class AIToolDispatcher {
         if let r = args["red"]?.double, let g = args["green"]?.double, let b = args["blue"]?.double {
             return PaletteColor(red: min(1, max(0, r)), green: min(1, max(0, g)), blue: min(1, max(0, b)))
         }
-        return session.foregroundColor
+        return nil
     }
 
     private static func parseHexColor(_ text: String) -> PaletteColor? {
@@ -262,6 +268,96 @@ final class AIToolDispatcher {
             session.document?.layers[index].blendMode = mode; changed.append("blend mode")
         }
         return changed.isEmpty ? "No properties changed." : "Updated \(changed.joined(separator: ", "))."
+    }
+
+    private func setLayerEffects(_ args: JSONValue) throws -> String {
+        guard let layer = resolve(args["layer_id"]?.string) else { throw AIError.invalidResponse("unknown layer id.") }
+        session.activeLayerID = layer.id
+        guard session.canEditEffects else { throw AIError.imageFailed("select a raster layer to add effects to.") }
+        guard let raw = args["kind"]?.string, let kind = LayerEffectKind(rawValue: raw) else {
+            throw AIError.invalidResponse("unknown effect kind.")
+        }
+        var effects = session.activeEffects
+        let color = optionalColor(args)
+        let enabled = args["enabled"]?.bool
+        let opacity = args["opacity"]?.double
+        switch kind {
+        case .stroke:
+            var value = effects.stroke ?? StrokeEffect()
+            if let size = args["size"]?.double { value.size = CGFloat(size) }
+            if let opacity { value.opacity = opacity }
+            if let inside = args["inside"]?.bool { value.inside = inside }
+            if let color { value.red = color.red; value.green = color.green; value.blue = color.blue }
+            if let enabled { value.enabled = enabled }
+            effects.stroke = value
+        case .shadow:
+            var value = effects.shadow ?? ShadowEffect()
+            if let angle = args["angle"]?.double { value.angle = CGFloat(angle) }
+            if let distance = args["distance"]?.double { value.distance = CGFloat(distance) }
+            if let blur = args["blur"]?.double { value.blur = CGFloat(blur) }
+            if let opacity { value.opacity = opacity }
+            if let color { value.red = color.red; value.green = color.green; value.blue = color.blue }
+            if let enabled { value.enabled = enabled }
+            effects.shadow = value
+        case .colorOverlay:
+            var value = effects.colorOverlay ?? ColorOverlayEffect()
+            if let opacity { value.opacity = opacity }
+            if let color { value.red = color.red; value.green = color.green; value.blue = color.blue }
+            if let enabled { value.enabled = enabled }
+            effects.colorOverlay = value
+        case .innerShadow:
+            var value = effects.innerShadow ?? InnerShadowEffect()
+            if let angle = args["angle"]?.double { value.angle = CGFloat(angle) }
+            if let distance = args["distance"]?.double { value.distance = CGFloat(distance) }
+            if let blur = args["blur"]?.double { value.blur = CGFloat(blur) }
+            if let opacity { value.opacity = opacity }
+            if let color { value.red = color.red; value.green = color.green; value.blue = color.blue }
+            if let enabled { value.enabled = enabled }
+            effects.innerShadow = value
+        case .outerGlow:
+            var value = effects.outerGlow ?? OuterGlowEffect()
+            if let size = args["size"]?.double { value.size = CGFloat(size) }
+            if let opacity { value.opacity = opacity }
+            if let color { value.red = color.red; value.green = color.green; value.blue = color.blue }
+            if let enabled { value.enabled = enabled }
+            effects.outerGlow = value
+        case .innerGlow:
+            var value = effects.innerGlow ?? InnerGlowEffect()
+            if let size = args["size"]?.double { value.size = CGFloat(size) }
+            if let opacity { value.opacity = opacity }
+            if let color { value.red = color.red; value.green = color.green; value.blue = color.blue }
+            if let enabled { value.enabled = enabled }
+            effects.innerGlow = value
+        }
+        guard effects.isValid else { throw AIError.invalidResponse("the effect values are out of range.") }
+        session.setEffects(effects, on: layer.id, name: "AI Layer Effect: \(kind.rawValue)")
+        return "Set the \(kind.rawValue) effect."
+    }
+
+    private func layerMask(_ args: JSONValue) async throws -> String {
+        guard let layer = resolve(args["layer_id"]?.string) else { throw AIError.invalidResponse("unknown layer id.") }
+        session.activeLayerID = layer.id
+        session.selectedLayerIDs = [layer.id]
+        switch args["action"]?.string {
+        case "add":
+            guard session.canEditMask else { throw AIError.imageFailed("select a single layer to mask.") }
+            guard layer.mask == nil else { throw AIError.invalidResponse("the layer already has a mask.") }
+            let revealing = args["reveal"]?.bool ?? true
+            session.addLayerMask(revealing: revealing)
+            guard session.activeLayer?.mask != nil else { throw AIError.imageFailed("the mask could not be added.") }
+            return revealing ? "Added a reveal-all mask." : "Added a hide-all mask."
+        case "delete":
+            guard layer.mask != nil else { throw AIError.invalidResponse("the layer has no mask.") }
+            session.deleteLayerMask()
+            return "Deleted the layer mask."
+        case "invert":
+            guard layer.mask != nil else { throw AIError.invalidResponse("the layer has no mask to invert.") }
+            session.isMaskSelected = true
+            await session.invertPixels()
+            return "Inverted the layer mask."
+        default:
+            throw AIError.invalidResponse("unknown mask action.")
+        }
     }
 
     private func reorderLayer(_ args: JSONValue) throws -> String {
@@ -452,7 +548,56 @@ final class AIToolDispatcher {
         }
         session.addAdjustment(kind)
         guard let id = session.activeLayerID else { throw AIError.invalidResponse("the adjustment could not be added.") }
-        return "Added \(kind.rawValue) adjustment layer \(CanvasStateSnapshot.shortID(id))."
+        // Without params the new layer keeps its defaults; with them, configure it as one further undo step.
+        guard let params = args["params"], params.object != nil else {
+            return "Added \(kind.rawValue) adjustment layer \(CanvasStateSnapshot.shortID(id))."
+        }
+        guard var adjustment = session.document?.layers.first(where: { $0.id == id })?.adjustment else {
+            throw AIError.invalidResponse("the adjustment layer has no settings to change.")
+        }
+        Self.configureAdjustment(&adjustment, kind: kind, params: params)
+        guard adjustment.isValid else { throw AIError.invalidResponse("the adjustment parameters are out of range.") }
+        session.beginEdit("AI \(kind.rawValue) Parameters")
+        session.updateAdjustment(id, value: adjustment)
+        session.endEdit()
+        return "Added \(kind.rawValue) adjustment layer \(CanvasStateSnapshot.shortID(id)) with custom parameters."
+    }
+
+    /// Writes the relevant `params` onto a fresh adjustment of `kind`; unrelated keys are ignored.
+    private static func configureAdjustment(_ adjustment: inout LayerAdjustment, kind: AdjustmentKind, params: JSONValue) {
+        switch kind {
+        case .hsv:
+            if let hue = params["hue"]?.double { adjustment.hue = hue }
+            if let saturation = params["saturation"]?.double { adjustment.saturation = saturation }
+            if let lightness = params["lightness"]?.double { adjustment.lightness = lightness }
+        case .exposure:
+            if let exposure = params["exposure"]?.double { adjustment.exposure.exposure = exposure }
+        case .grain:
+            if let amount = params["amount"]?.double { adjustment.grain.amount = amount }
+        case .addNoise:
+            if let amount = params["amount"]?.double { adjustment.resolvedNoiseAmount = amount }
+        case .gaussianBlur:
+            if let radius = params["radius"]?.double { adjustment.gaussianRadius = radius }
+        case .motionBlur:
+            if let angle = params["angle"]?.double { adjustment.resolvedMotionAngle = angle }
+            if let distance = params["distance"]?.double { adjustment.resolvedMotionDistance = distance }
+        case .vibrance:
+            if let amount = params["amount"]?.double { adjustment.vibrance.amount = amount }
+            if let saturation = params["saturation"]?.double { adjustment.vibrance.saturation = saturation }
+        case .shadowsHighlights:
+            if let amount = params["amount"]?.double { adjustment.shadowsHighlights.shadows = amount }
+        case .posterize:
+            if let amount = params["amount"]?.double { adjustment.posterize.levels = amount }
+        case .threshold:
+            if let amount = params["amount"]?.double { adjustment.threshold.level = amount }
+        case .desaturate:
+            if let amount = params["amount"]?.double { adjustment.desaturate.amount = amount }
+        case .photoFilter:
+            if let hue = params["hue"]?.double { adjustment.photoFilter.hue = hue }
+            if let amount = params["amount"]?.double { adjustment.photoFilter.density = amount }
+        default:
+            break
+        }
     }
 
     private func applyFilter(_ args: JSONValue) async throws -> String {
@@ -477,6 +622,27 @@ final class AIToolDispatcher {
             if let amount = args["amount"]?.double { settings.bloomAmount = amount }
         case .tonalContrast:
             if let amount = args["amount"]?.double { settings.tonalAmount = amount }
+        case .lensCorrection:
+            if let distortion = args["distortion"]?.double { settings.distortion = distortion }
+        case .sharpen:
+            if let amount = args["amount"]?.double { settings.sharpenAmount = amount }
+        case .unsharpMask:
+            if let radius = args["radius"]?.double { settings.radius = radius }
+            if let amount = args["amount"]?.double { settings.unsharpAmount = amount }
+        case .boxBlur, .discBlur, .tiltShift:
+            if let radius = args["radius"]?.double { settings.radius = radius }
+        case .zoomBlur:
+            if let amount = args["amount"]?.double { settings.zoomAmount = amount }
+        case .pixelate:
+            if let radius = args["radius"]?.double { settings.pixelateScale = radius }
+        case .crystallize:
+            if let radius = args["radius"]?.double { settings.crystallizeRadius = radius }
+        case .pointillize:
+            if let radius = args["radius"]?.double { settings.pointillizeRadius = radius }
+        case .twirl:
+            if let angle = args["angle"]?.double { settings.twirlAngle = angle }
+        case .ripple:
+            if let amount = args["amount"]?.double { settings.rippleScale = amount }
         default: break
         }
         let job = FilterJob(kind: kind, image: asset.image, settings: settings, scale: 1,
@@ -493,6 +659,33 @@ final class AIToolDispatcher {
         session.document?.layers[index].asset = ImportedImage(image: result, thumbnail: thumbnail, name: layer.name)
         session.endEdit()
         return "Applied \(kind.rawValue)."
+    }
+
+    private func contentAwareFill(_ args: JSONValue) async throws -> String {
+        session.isMaskSelected = false
+        guard let document = session.document else { throw AIError.noDocument }
+        guard let layer = session.activeLayer, let asset = layer.asset else {
+            throw AIError.imageFailed("select a raster layer first.")
+        }
+        guard let selection = session.selection, !selection.isEmpty else {
+            throw AIError.invalidResponse("make a selection to fill first.")
+        }
+        let clip = try selection.clip(canvas: document.size)
+        let mapping = BrushRaster.pixelToDocument(layer.transform, width: asset.image.width, height: asset.image.height)
+        let job = FilterJob(kind: .contentAwareFill, image: asset.image, settings: FilterSettings(), scale: 1,
+                            selection: clip, mapping: mapping)
+        let result = try await Task.detached(priority: .userInitiated) {
+            try PixelFilter.run(job)
+        }.value
+        let thumbnail = try PixelAdjust.thumbnail(of: result)
+        session.beginEdit("AI Content-Aware Fill")
+        guard let index = session.document?.layers.firstIndex(where: { $0.id == layer.id }) else {
+            session.endEdit()
+            throw AIError.invalidResponse("the layer changed before the fill applied.")
+        }
+        session.document?.layers[index].asset = ImportedImage(image: result, thumbnail: thumbnail, name: layer.name)
+        session.endEdit()
+        return "Filled the selection with content-aware fill."
     }
 
     // MARK: Batch 3 — selection, canvas, links
@@ -522,6 +715,24 @@ final class AIToolDispatcher {
         case "deselect":
             session.deselect()
             return "Selection cleared."
+        case "expand", "contract", "feather":
+            let action = args["action"]?.string ?? ""
+            guard session.selection?.isEmpty == false else { throw AIError.invalidResponse("there is no selection to modify.") }
+            guard let amount = args["amount"]?.double.map(Int.init) else { throw AIError.invalidResponse("an amount is required.") }
+            switch action {
+            case "expand":
+                guard (1...500).contains(amount) else { throw AIError.invalidResponse("expand amount must be between 1 and 500.") }
+                session.expandSelection(by: amount)
+                return "Selection expanded by \(amount)."
+            case "contract":
+                guard (1...500).contains(amount) else { throw AIError.invalidResponse("contract amount must be between 1 and 500.") }
+                session.contractSelection(by: amount)
+                return "Selection contracted by \(amount)."
+            default:
+                guard (1...250).contains(amount) else { throw AIError.invalidResponse("feather amount must be between 1 and 250.") }
+                session.featherSelection(by: amount)
+                return "Selection feathered by \(amount)."
+            }
         default:
             throw AIError.invalidResponse("unknown selection action.")
         }

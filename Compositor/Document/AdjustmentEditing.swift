@@ -39,7 +39,8 @@ extension EditorSession {
                 let edit = try HueSaturationEdit(layerID: layer.id, original: asset, selection: nil, transform: layer.transform)
                 edit.settings = original.resolvedHSV
                 hueSaturation = edit
-            case .curves, .exposure, .gradientMap, .grain, .blackWhite, .colorBalance, .gaussianBlur, .motionBlur, .addNoise:
+            case .curves, .exposure, .gradientMap, .grain, .blackWhite, .colorBalance, .gaussianBlur, .motionBlur, .addNoise,
+                    .vibrance, .shadowsHighlights, .posterize, .threshold, .desaturate, .photoFilter, .channelMixer:
                 var settings = FilterSettings()
                 settings.curves = original.curves
                 settings.exposure = original.exposure
@@ -47,6 +48,13 @@ extension EditorSession {
                 settings.grain = original.grain
                 settings.blackWhite = original.blackWhite
                 settings.colorBalance = original.colorBalance
+                settings.vibrance = original.vibrance
+                settings.shadowsHighlights = original.shadowsHighlights
+                settings.posterize = original.posterize
+                settings.threshold = original.threshold
+                settings.desaturate = original.desaturate
+                settings.photoFilter = original.photoFilter
+                settings.channelMixer = original.channelMixer
                 settings.radius = original.gaussianRadius
                 settings.angle = original.resolvedMotionAngle
                 settings.distance = original.resolvedMotionDistance
@@ -75,7 +83,8 @@ extension EditorSession {
         case .hsv:
             guard let hueSaturation else { return nil }
             value.hsvSettings = hueSaturation.settings
-        case .curves, .exposure, .gradientMap, .grain, .blackWhite, .colorBalance, .gaussianBlur, .motionBlur, .addNoise:
+        case .curves, .exposure, .gradientMap, .grain, .blackWhite, .colorBalance, .gaussianBlur, .motionBlur, .addNoise,
+                .vibrance, .shadowsHighlights, .posterize, .threshold, .desaturate, .photoFilter, .channelMixer:
             guard let filterEdit else { return nil }
             switch value.kind {
             case .exposure: value.exposure = filterEdit.settings.exposure
@@ -83,6 +92,13 @@ extension EditorSession {
             case .grain: value.grain = filterEdit.settings.grain
             case .blackWhite: value.blackWhite = filterEdit.settings.blackWhite
             case .colorBalance: value.colorBalance = filterEdit.settings.colorBalance
+            case .vibrance: value.vibrance = filterEdit.settings.vibrance
+            case .shadowsHighlights: value.shadowsHighlights = filterEdit.settings.shadowsHighlights
+            case .posterize: value.posterize = filterEdit.settings.posterize
+            case .threshold: value.threshold = filterEdit.settings.threshold
+            case .desaturate: value.desaturate = filterEdit.settings.desaturate
+            case .photoFilter: value.photoFilter = filterEdit.settings.photoFilter
+            case .channelMixer: value.channelMixer = filterEdit.settings.channelMixer
             case .gaussianBlur: value.gaussianRadius = filterEdit.settings.radius
             case .motionBlur:
                 value.resolvedMotionAngle = filterEdit.settings.angle

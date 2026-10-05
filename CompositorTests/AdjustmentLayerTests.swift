@@ -189,7 +189,8 @@ import Testing
             session.updateFilter(settings, preview: true)
             #expect(session.activeLayer?.adjustment?.curves == settings.curves)
             await session.commitFilter()
-        case .exposure, .gradientMap, .grain, .blackWhite, .colorBalance, .gaussianBlur, .motionBlur, .addNoise:
+        case .exposure, .gradientMap, .grain, .blackWhite, .colorBalance, .gaussianBlur, .motionBlur, .addNoise,
+             .vibrance, .shadowsHighlights, .posterize, .threshold, .desaturate, .photoFilter, .channelMixer:
             #expect(session.filterEdit?.kind == kind.filterKind)
             var settings = try #require(session.filterEdit).settings
             switch kind {
@@ -200,11 +201,22 @@ import Testing
             case .gaussianBlur: settings.radius = 24
             case .motionBlur: settings.angle = 35; settings.distance = 48
             case .addNoise: settings.amount = 35; settings.gaussian = true; settings.monochromatic = true
+            case .vibrance: settings.vibrance.amount = 30; settings.vibrance.saturation = -20
+            case .shadowsHighlights: settings.shadowsHighlights.shadows = 60; settings.shadowsHighlights.radius = 12
+            case .posterize: settings.posterize.levels = 8
+            case .threshold: settings.threshold.level = 100
+            case .desaturate: settings.desaturate.amount = 50
+            case .photoFilter: settings.photoFilter.hue = 200; settings.photoFilter.density = 40; settings.photoFilter.preserveLuminosity = false
+            case .channelMixer: settings.channelMixer.redGreen = 25; settings.channelMixer.blueBlue = 80
             default: settings.grain.amount = 70
             }
             session.updateFilter(settings, preview: true)
             let live = try #require(session.activeLayer?.adjustment)
-            #expect(live.exposure == settings.exposure && live.gradientMap == settings.gradientMap && live.grain == settings.grain)
+            #expect(live.exposure == settings.exposure && live.gradientMap == settings.gradientMap && live.grain == settings.grain
+                    && live.vibrance == settings.vibrance && live.shadowsHighlights == settings.shadowsHighlights
+                    && live.posterize == settings.posterize && live.threshold == settings.threshold
+                    && live.desaturate == settings.desaturate && live.photoFilter == settings.photoFilter
+                    && live.channelMixer == settings.channelMixer)
             if kind == .gaussianBlur { #expect(live.gaussianRadius == 24) }
             if kind == .motionBlur { #expect(live.resolvedMotionAngle == 35 && live.resolvedMotionDistance == 48) }
             if kind == .addNoise {
@@ -235,11 +247,16 @@ import Testing
             #expect(session.levels?.settings == saved.levels)
             session.updateLevels(LevelsSettings(), preview: true)
             session.cancelLevels()
-        case .curves, .exposure, .gradientMap, .grain, .blackWhite, .colorBalance, .gaussianBlur, .motionBlur, .addNoise:
+        case .curves, .exposure, .gradientMap, .grain, .blackWhite, .colorBalance, .gaussianBlur, .motionBlur, .addNoise,
+             .vibrance, .shadowsHighlights, .posterize, .threshold, .desaturate, .photoFilter, .channelMixer:
             let reopened = try #require(session.filterEdit).settings
             #expect(reopened.curves == saved.curves && reopened.exposure == saved.exposure
                     && reopened.gradientMap == saved.gradientMap && reopened.grain == saved.grain
-                    && reopened.blackWhite == saved.blackWhite && reopened.colorBalance == saved.colorBalance)
+                    && reopened.blackWhite == saved.blackWhite && reopened.colorBalance == saved.colorBalance
+                    && reopened.vibrance == saved.vibrance && reopened.shadowsHighlights == saved.shadowsHighlights
+                    && reopened.posterize == saved.posterize && reopened.threshold == saved.threshold
+                    && reopened.desaturate == saved.desaturate && reopened.photoFilter == saved.photoFilter
+                    && reopened.channelMixer == saved.channelMixer)
             #expect(reopened.radius == saved.gaussianRadius && reopened.angle == saved.resolvedMotionAngle
                     && reopened.distance == saved.resolvedMotionDistance)
             #expect(reopened.amount == saved.resolvedNoiseAmount && reopened.gaussian == saved.resolvedNoiseGaussian

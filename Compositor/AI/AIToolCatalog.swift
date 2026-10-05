@@ -57,6 +57,28 @@ nonisolated enum AIToolCatalog {
                         "name": .stringProperty("New layer name."),
                        ])),
 
+        ToolDefinition(name: "set_layer_effects",
+                       description: "Add or change one layer effect (layer style) on a raster layer. Omit any value to keep its current one; a brand-new effect starts from sensible defaults.",
+                       parameters: .schema(fields([
+                        "layer_id": .stringProperty("The short layer id. Defaults to the active layer."),
+                        "kind": .stringProperty("Effect kind.", enum: LayerEffectKind.allCases.map(\.rawValue)),
+                        "enabled": .boolProperty("Whether the effect is visible."),
+                        "size": .numberProperty("Stroke / glow spread in pixels.", minimum: 0, maximum: 500),
+                        "opacity": .numberProperty("Effect opacity, 0 to 1.", minimum: 0, maximum: 1),
+                        "angle": .numberProperty("Shadow light angle in degrees (Drop Shadow / Inner Shadow).", minimum: -360, maximum: 360),
+                        "distance": .numberProperty("Shadow offset in pixels (Drop Shadow / Inner Shadow).", minimum: 0, maximum: 5000),
+                        "blur": .numberProperty("Shadow softness in pixels (Drop Shadow / Inner Shadow).", minimum: 0, maximum: 500),
+                        "inside": .boolProperty("Stroke inside the edge rather than outside."),
+                       ], merging: colorFields), required: ["kind"])),
+
+        ToolDefinition(name: "layer_mask",
+                       description: "Add, delete, or invert a layer mask on a layer.",
+                       parameters: .schema([
+                        "layer_id": .stringProperty("The short layer id. Defaults to the active layer."),
+                        "action": .stringProperty("What to do.", enum: ["add", "delete", "invert"]),
+                        "reveal": .boolProperty("For add: true for a reveal-all (white) mask, false for hide-all (black). Defaults to true."),
+                       ], required: ["action"])),
+
         ToolDefinition(name: "reorder_layer",
                        description: "Move a layer up or down within its siblings.",
                        parameters: .schema([
@@ -147,10 +169,24 @@ nonisolated enum AIToolCatalog {
                        ], merging: colorFields), required: ["kind", "rect", "from", "to"])),
 
         ToolDefinition(name: "apply_adjustment",
-                       description: "Add an adjustment layer of the given kind above the active layer.",
+                       description: "Add an adjustment layer of the given kind above the active layer, optionally setting its parameters.",
                        parameters: .schema([
                         "kind": .stringProperty("Adjustment kind.",
                                                 enum: AdjustmentKind.allCases.map(\.rawValue)),
+                        "params": .object([
+                            "type": .string("object"),
+                            "description": .string("Optional parameters; which keys apply depends on kind. Hue/Saturation: hue, saturation, lightness. Exposure: exposure. Grain: amount (0-100). Add Noise: amount (0.1-400). Gaussian Blur: radius. Motion Blur: angle, distance. Vibrance: amount (-100 to 100), saturation. Shadows / Highlights: amount (shadows strength, 0-100). Posterize: amount (levels, 2-255). Threshold: amount (level, 0-255). Desaturate: amount (0-100). Photo Filter: hue (gel, 0-360), amount (density, 0-100)."),
+                            "properties": .object([
+                                "hue": .numberProperty("Hue/Saturation hue shift (-180 to 180) or Photo Filter gel hue (0 to 360).", minimum: -180, maximum: 360),
+                                "saturation": .numberProperty("Hue/Saturation or Vibrance saturation, -100 to 100.", minimum: -100, maximum: 100),
+                                "lightness": .numberProperty("Hue/Saturation lightness, -100 to 100.", minimum: -100, maximum: 100),
+                                "exposure": .numberProperty("Exposure in stops, -20 to 20.", minimum: -20, maximum: 20),
+                                "amount": .numberProperty("Grain (0-100), Add Noise (0.1-400), Vibrance (-100 to 100), Shadows / Highlights shadows (0-100), Posterize levels (2-255), Threshold level (0-255), Desaturate (0-100), or Photo Filter density (0-100).", minimum: -100, maximum: 400),
+                                "radius": .numberProperty("Gaussian Blur radius in points.", minimum: 0.1, maximum: 250),
+                                "angle": .numberProperty("Motion Blur angle in degrees.", minimum: -90, maximum: 90),
+                                "distance": .numberProperty("Motion Blur streak length in points.", minimum: 1, maximum: 2000),
+                            ]),
+                        ]),
                        ], required: ["kind"])),
 
         ToolDefinition(name: "apply_filter",
@@ -158,13 +194,20 @@ nonisolated enum AIToolCatalog {
                        parameters: .schema([
                         "kind": .stringProperty("Filter kind.", enum: [
                             "Gaussian Blur", "Motion Blur", "Add Noise", "Vignette", "Bloom / Glow",
-                            "Tonal Contrast", "Remove Background",
+                            "Tonal Contrast", "Lens Correction", "Remove Background",
+                            "Sharpen", "Unsharp Mask", "Box Blur", "Disc Blur", "Tilt-Shift", "Zoom Blur",
+                            "Pixelate", "Crystallize", "Pointillize", "Twirl", "Ripple",
                         ]),
-                        "radius": .numberProperty("Gaussian Blur radius in points.", minimum: 0.1, maximum: 250),
-                        "angle": .numberProperty("Motion Blur angle in degrees.", minimum: -90, maximum: 90),
+                        "radius": .numberProperty("Blur radius / cell size in points (Gaussian, Box, Disc, Tilt-Shift, Unsharp Mask, Pixelate, Crystallize, Pointillize).", minimum: 0.1, maximum: 250),
+                        "angle": .numberProperty("Motion Blur angle (-90 to 90) or Twirl rotation (-360 to 360), in degrees.", minimum: -360, maximum: 360),
                         "distance": .numberProperty("Motion Blur streak length in points.", minimum: 1, maximum: 2000),
-                        "amount": .numberProperty("Strength as a percentage (noise 0.1-400, others 0-100).", minimum: 0.1, maximum: 400),
+                        "amount": .numberProperty("Strength as a percentage (Sharpen, Unsharp Mask, Zoom Blur, Ripple, Add Noise, Vignette, Bloom, Tonal Contrast).", minimum: 0.1, maximum: 500),
+                        "distortion": .numberProperty("Lens Correction: positive straightens barrel, negative straightens pincushion, -100 to 100.", minimum: -100, maximum: 100),
                        ], required: ["kind"])),
+
+        ToolDefinition(name: "content_aware_fill",
+                       description: "Fill the current selection of the active raster layer by synthesizing texture from the surrounding image. A selection is required.",
+                       parameters: .schema([:])),
 
         ToolDefinition(name: "set_selection",
                        description: "Replace the current selection.",
@@ -175,9 +218,10 @@ nonisolated enum AIToolCatalog {
                        ], required: ["shape"])),
 
         ToolDefinition(name: "modify_selection",
-                       description: "Invert or clear the current selection.",
+                       description: "Invert, clear, expand, contract, or feather the current selection.",
                        parameters: .schema([
-                        "action": .stringProperty("Action.", enum: ["invert", "deselect"]),
+                        "action": .stringProperty("Action.", enum: ["invert", "deselect", "expand", "contract", "feather"]),
+                        "amount": .integerProperty("Pixels for expand/contract (1-500) or feather (1-250). Required by those actions.", minimum: 1, maximum: 500),
                        ], required: ["action"])),
 
         ToolDefinition(name: "select_subject",
