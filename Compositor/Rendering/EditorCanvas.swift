@@ -834,6 +834,14 @@ final class CanvasView: NSView {
                     opacity: opacity, blendMode: blendMode(of: layer), mask: mask, in: context)
                 return
             }
+            // Dodge / Burn / Sponge in progress: the layer as the stroke has re-toned it so far.
+            if let tone = session.toneStroke, tone.layer.id == layer.id, let image = tone.image {
+                let canvas = LayerTransform(origin: .zero, size: document.size)
+                let mask = layer.mask?.clipImage(placement: layer.maskTransform, over: canvas, width: tone.width, height: tone.height, limit: 2048)
+                LayerRenderer.draw(image, transform: canvas, center: center(canvas.center), scale: scale,
+                    opacity: opacity, blendMode: blendMode(of: layer), mask: mask, in: context)
+                return
+            }
             // A pending distortion shows the layer warped into its new shape — with its effects warped along with
             // it, so they stay on while the corners move.
             if stroke == nil, layer.effects?.visible.isEmpty == false,
@@ -1147,7 +1155,7 @@ final class CanvasView: NSView {
         // only tools whose cursor depends on where the pointer is also track movement.
         // The picker panel stays key, so sampling must track while this window is not.
         var options: NSTrackingArea.Options = [.mouseEnteredAndExited, picking ? .activeAlways : .activeInKeyWindow, .inVisibleRect]
-        if picking || session.tool == .move || session.tool.isBrushTool || session.tool.isSelectionTool {
+        if picking || session.tool == .move || session.tool.isBrushTool || session.tool.isSelectionTool || session.tool == .pen {
             options.formUnion([.mouseMoved, .cursorUpdate])
         }
         let area = NSTrackingArea(rect: .zero, options: options, owner: self)
@@ -1263,6 +1271,12 @@ final class CanvasView: NSView {
             }
             return
         }
+        if session.tool == .pen, session.penDraft != nil, let document = session.document {
+            // Move the rubber band's end to the pointer while a path is being drawn.
+            session.movePenCursor(to: session.viewport.documentPoint(from: convert(event.locationInWindow, from: nil), documentSize: document.size))
+            synchronizeDisplay()
+            return
+        }
         brushPointer = convert(event.locationInWindow, from: nil)
         updateBrushCursor()
         if session.tool == .move { updateTransformCursor(at: convert(event.locationInWindow, from: nil), flags: event.modifierFlags) }
@@ -1348,7 +1362,7 @@ final class CanvasView: NSView {
     /// change its hardness. The brush circle stays where the press was.
     private var brushTipDrag: (start: CGPoint, diameter: CGFloat, hardness: CGFloat, hardnessShown: Bool)?
     override func rightMouseDown(with event: NSEvent) {
-        guard session.tool.isBrushTool, session.brushStroke == nil, session.warpStroke == nil, !spaceHeld else {
+        guard session.tool.isBrushTool, session.brushStroke == nil, session.warpStroke == nil, session.toneStroke == nil, !spaceHeld else {
             super.rightMouseDown(with: event); return
         }
         let point = convert(event.locationInWindow, from: nil)
@@ -1466,6 +1480,11 @@ final class CanvasView: NSView {
             beginTextGesture(at: point, event: event)
         } else if session.tool == .shape, let document = session.document {
             session.beginShape(at: session.viewport.documentPoint(from: point, documentSize: document.size))
+        } else if session.tool == .pen, let document = session.document {
+            let doc = session.viewport.documentPoint(from: point, documentSize: document.size)
+            // Grabbing an anchor or handle of the active path layer edits it; otherwise a click draws a new path.
+            if !session.beginPathEdit(at: doc, option: event.modifierFlags.contains(.option)) { session.beginPen(at: doc) }
+            synchronizeDisplay()
         } else if session.tool == .crop {
             beginCropDrag(at: point)
         } else if session.tool == .move {
@@ -1536,6 +1555,16 @@ final class CanvasView: NSView {
             synchronizeDisplay()
             return
         }
+        if session.pathEdit != nil, let document = session.document {
+            session.dragPathEdit(to: session.viewport.documentPoint(from: point, documentSize: document.size))
+            synchronizeDisplay()
+            return
+        }
+        if session.penDraft != nil, let document = session.document {
+            session.dragPen(to: session.viewport.documentPoint(from: point, documentSize: document.size))
+            synchronizeDisplay()
+            return
+        }
         if let handle = gradientDrag, let edit = session.gradientEdit, let document = session.document {
             var pixel = session.viewport.documentPoint(from: point, documentSize: document.size)
             if event.modifierFlags.contains(.shift) {
@@ -1547,7 +1576,7 @@ final class CanvasView: NSView {
         }
         brushPointer = point
         updateBrushCursor()
-        if session.brushStroke != nil || session.warpStroke != nil, !session.isProjectBusy, let document = session.document {
+        if session.brushStroke != nil || session.warpStroke != nil || session.toneStroke != nil, !session.isProjectBusy, let document = session.document {
             var pixel = session.viewport.documentPoint(from: point, documentSize: document.size)
             // Shift keeps the stroke straight, horizontal or vertical, from wherever it was pressed; letting go carries
             // on freehand. The axis is settled by the first few pixels of movement, so it doesn't flip mid-line.
@@ -1670,7 +1699,7 @@ final class CanvasView: NSView {
             if session.colorPicker != nil { ColorPickerPanelController.refocus() }
             return
         }
-        if session.brushStroke != nil || session.warpStroke != nil, !session.isProjectBusy {
+        if session.brushStroke != nil || session.warpStroke != nil || session.toneStroke != nil, !session.isProjectBusy {
             if let document = session.document {
                 session.continueBrush(at: session.viewport.documentPoint(from: convert(event.locationInWindow, from: nil), documentSize: document.size))
             }
@@ -1683,6 +1712,14 @@ final class CanvasView: NSView {
         }
         if session.shapeDraft != nil {
             session.finishShape()
+            synchronizeDisplay()
+        }
+        if session.pathEdit != nil {
+            session.commitPathEdit()
+            synchronizeDisplay()
+        }
+        if session.penDraft != nil {
+            session.endPenDrag()
             synchronizeDisplay()
         }
         if hueTargetStart != nil {
@@ -1727,7 +1764,7 @@ final class CanvasView: NSView {
         window?.invalidateCursorRects(for: self)
     }
     override func scrollWheel(with event: NSEvent) {
-        guard transformDrag == nil, cropDrag == nil, !guideDragging, session.brushStroke == nil, session.warpStroke == nil else { return }
+        guard transformDrag == nil, cropDrag == nil, !guideDragging, session.brushStroke == nil, session.warpStroke == nil, session.toneStroke == nil else { return }
         guard session.document != nil else { return }
         if event.modifierFlags.contains(.command) || event.modifierFlags.contains(.option) {
             session.zoom(to: session.viewport.zoom * exp(-event.scrollingDeltaY * 0.015),
@@ -1740,7 +1777,7 @@ final class CanvasView: NSView {
         }
     }
     override func magnify(with event: NSEvent) {
-        guard transformDrag == nil, cropDrag == nil, !guideDragging, session.brushStroke == nil, session.warpStroke == nil else { return }
+        guard transformDrag == nil, cropDrag == nil, !guideDragging, session.brushStroke == nil, session.warpStroke == nil, session.toneStroke == nil else { return }
         session.zoom(to: session.viewport.zoom * (1 + event.magnification),
                      anchor: convert(event.locationInWindow, from: nil))
     }
@@ -1765,7 +1802,7 @@ final class CanvasView: NSView {
             }
             if event.keyCode != 49 { super.keyDown(with: event); return }
         }
-        if session.brushStroke != nil || session.warpStroke != nil {
+        if session.brushStroke != nil || session.warpStroke != nil || session.toneStroke != nil {
             if event.keyCode == 53 && !session.isProjectBusy { session.cancelBrush(); synchronizeDisplay() }
             return
         }
@@ -1777,6 +1814,15 @@ final class CanvasView: NSView {
             refreshLassoCursor()
         } else if session.shapeDraft != nil, event.keyCode == 53 {
             session.cancelShape()
+            synchronizeDisplay()
+        } else if session.pathEdit != nil, event.keyCode == 53 {
+            session.cancelPathEdit()
+            synchronizeDisplay()
+        } else if session.penDraft != nil, event.keyCode == 53 {
+            session.cancelPen()
+            synchronizeDisplay()
+        } else if session.penDraft != nil, [36, 76].contains(event.keyCode) {
+            session.finishPen()
             synchronizeDisplay()
         } else if session.gradientEdit != nil, event.keyCode == 53 {
             gradientDrag = nil
@@ -1839,6 +1885,7 @@ final class CanvasView: NSView {
             case "j": session.selectTool(.spotHealing)
             case "s": session.selectTool(.cloneStamp)
             case "t": session.selectTool(.type)
+            case "p": session.selectTool(.pen)
             case "g": session.selectTool(.gradient)
             case "u":
                 if event.modifierFlags.contains(.shift), session.tool == .shape { session.toggleShapeKind() }
@@ -1882,6 +1929,7 @@ final class CanvasView: NSView {
         cropDrag = nil
         gradientDrag = nil
         session.cancelShape()
+        session.cancelPathEdit()
         if let kind = session.lassoDraft?.kind, kind != .polygonal { session.cancelLasso() }
         if selectionDragStart != nil { selectionDragStart = nil; session.endSelectionMove() }
         if pixelDragStart != nil { pixelDragStart = nil; session.cancelPixelMove() }

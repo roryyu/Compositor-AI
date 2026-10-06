@@ -19,4 +19,14 @@ nonisolated enum ToolDefaults {
         guard !isTesting else { return }
         UserDefaults.standard.set(value, forKey: prefix + key)
     }
+
+    static func double(_ key: String, _ fallback: Double) -> Double {
+        guard !isTesting else { return fallback }
+        return UserDefaults.standard.object(forKey: prefix + key) as? Double ?? fallback
+    }
+
+    static func set(_ value: Double, _ key: String) {
+        guard !isTesting else { return }
+        UserDefaults.standard.set(value, forKey: prefix + key)
+    }
 }

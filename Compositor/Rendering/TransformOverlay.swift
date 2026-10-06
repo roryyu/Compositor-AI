@@ -184,6 +184,7 @@ final class TransformOverlay: NSView {
         else { drawTransformHandles() }
         drawSelection()
         drawLassoDraft()
+        drawPathOverlay()
         drawSnapGuides()
     }
 
@@ -270,6 +271,69 @@ final class TransformOverlay: NSView {
             context.addLine(to: CGPoint(x: document.size.width, y: y).applying(transform))
         }
         context.strokePath()
+        context.restoreGState()
+    }
+
+    /// The Pen tool's draft path, and any in-progress anchor edit, drawn over the canvas: the outline,
+    /// square anchors, and round handles on their stems, with a rubber band to the pointer while drawing.
+    private func drawPathOverlay() {
+        guard session.tool == .pen, var transform = documentToView,
+              let context = NSGraphicsContext.current?.cgContext else { return }
+        context.saveGState()
+
+        func outline(_ anchors: [PathAnchor], closed: Bool, to cursor: CGPoint?) -> CGPath {
+            let path = CGMutablePath()
+            guard let first = anchors.first else { return path }
+            path.move(to: first.point)
+            var previous = first
+            for anchor in anchors.dropFirst() {
+                if let c1 = previous.outHandle, let c2 = anchor.inHandle {
+                    path.addCurve(to: anchor.point, control1: c1, control2: c2)
+                } else { path.addLine(to: anchor.point) }
+                previous = anchor
+            }
+            if closed {
+                if let c1 = previous.outHandle, let c2 = first.inHandle { path.addCurve(to: first.point, control1: c1, control2: c2) }
+                path.closeSubpath()
+            } else if let cursor {
+                if let c1 = previous.outHandle { path.addCurve(to: cursor, control1: c1, control2: cursor) }
+                else { path.addLine(to: cursor) }
+            }
+            return path
+        }
+
+        func render(_ anchors: [PathAnchor], _ path: CGPath) {
+            if let view = path.copy(using: &transform) {
+                context.addPath(view)
+                context.setStrokeColor(NSColor.white.cgColor); context.setLineWidth(2.5); context.strokePath()
+                context.addPath(view)
+                context.setStrokeColor(NSColor.black.cgColor); context.setLineWidth(1); context.strokePath()
+            }
+            for anchor in anchors {
+                let a = anchor.point.applying(transform)
+                for handle in [anchor.inHandle, anchor.outHandle].compactMap({ $0 }) {
+                    let h = handle.applying(transform)
+                    context.move(to: a); context.addLine(to: h)
+                    context.setStrokeColor(NSColor.systemBlue.cgColor); context.setLineWidth(1); context.strokePath()
+                    let circle = CGRect(x: h.x - 3, y: h.y - 3, width: 6, height: 6)
+                    context.setFillColor(NSColor.white.cgColor); context.fillEllipse(in: circle)
+                    context.setStrokeColor(NSColor.systemBlue.cgColor); context.strokeEllipse(in: circle)
+                }
+                let square = CGRect(x: a.x - 3.5, y: a.y - 3.5, width: 7, height: 7)
+                context.setFillColor(NSColor.white.cgColor); context.fill(square)
+                context.setStrokeColor(NSColor.black.cgColor); context.stroke(square)
+            }
+        }
+
+        if let draft = session.penDraft {
+            render(draft.anchors, outline(draft.anchors, closed: draft.closed, to: draft.cursor))
+        }
+        if let edit = session.pathEdit, let layer = session.document?.layers.first(where: { $0.id == edit.layerID }) {
+            let box = CGRect(origin: layer.transform.origin, size: layer.transform.size)
+            func doc(_ u: CGPoint) -> CGPoint { CGPoint(x: box.minX + u.x * box.width, y: box.minY + u.y * box.height) }
+            let anchors = edit.style.anchors.map { PathAnchor(point: doc($0.point), inHandle: $0.inHandle.map(doc), outHandle: $0.outHandle.map(doc)) }
+            render(anchors, edit.style.cgPath(in: box))
+        }
         context.restoreGState()
     }
 

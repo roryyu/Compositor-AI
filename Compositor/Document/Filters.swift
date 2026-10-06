@@ -23,6 +23,7 @@ nonisolated enum FilterKind: String, CaseIterable, Sendable {
     case pointillize = "Pointillize"
     case twirl = "Twirl"
     case ripple = "Ripple"
+    case displace = "Displace"
     case cameraRaw = "Camera Raw Filter"
     case removeBackground = "Remove Background"
     case contentAwareFill = "Content-Aware Fill"
@@ -39,13 +40,14 @@ nonisolated enum FilterKind: String, CaseIterable, Sendable {
     case desaturate = "Desaturate"
     case photoFilter = "Photo Filter"
     case channelMixer = "Channel Mixer"
+    case colorLookup = "Color Lookup"
     var isAutomatic: Bool { self == .contentAwareFill || self == .removeBackground }
     /// Color adjustments: in the Image menu (and editable as adjustment layers), not under Filter.
     var isImageAdjustment: Bool {
         self == .curves || self == .exposure || self == .gradientMap || self == .grain
             || self == .blackWhite || self == .colorBalance || self == .vibrance || self == .shadowsHighlights
             || self == .posterize || self == .threshold || self == .desaturate || self == .photoFilter
-            || self == .channelMixer
+            || self == .channelMixer || self == .colorLookup
     }
 }
 
@@ -102,6 +104,9 @@ nonisolated struct FilterSettings: Equatable, Sendable {
     /// Twirl rotation in degrees, −360–360; Ripple wave scale, 0–100. Both take their radius from the image size.
     var twirlAngle: Double = 180
     var rippleScale: Double = 40
+    /// Displace: how far neutral gray pushes pixels, and the layer whose pixels are the displacement map.
+    var displaceScale: Double = 10
+    var displaceMapLayerID: UUID? = nil
     var curves = CurvesSettings()
     var exposure = ExposureSettings()
     var gradientMap = GradientMapSettings()
@@ -115,6 +120,7 @@ nonisolated struct FilterSettings: Equatable, Sendable {
     var desaturate = DesaturateSettings()
     var photoFilter = PhotoFilterSettings()
     var channelMixer = ChannelMixerSettings()
+    var colorLookup = ColorLookupSettings()
     var cameraRaw = CameraRawSettings()
     /// Remove Background: Basic is the quick subject mask; Advanced refines it (see the three settings below).
     var backgroundQuality: BackgroundQuality = .basic
@@ -155,6 +161,7 @@ nonisolated struct FilterSettings: Equatable, Sendable {
         result.pointillizeRadius = clamp(pointillizeRadius, 1...100, 12)
         result.twirlAngle = clamp(twirlAngle, -360...360, 180)
         result.rippleScale = clamp(rippleScale, 0...100, 40)
+        result.displaceScale = clamp(displaceScale, 0...100, 10)
         result.refineEdges = clamp(refineEdges, 0...40, 12)
         result.matteContrast = clamp(matteContrast, 0...100, 25)
         result.shiftEdge = clamp(shiftEdge, -10...10, 0)
@@ -168,6 +175,7 @@ nonisolated struct FilterSettings: Equatable, Sendable {
         result.desaturate = desaturate.normalized
         result.photoFilter = photoFilter.normalized
         result.channelMixer = channelMixer.normalized
+        result.colorLookup = colorLookup.normalized
         result.cameraRaw = cameraRaw.normalized
         return result
     }
@@ -197,6 +205,8 @@ nonisolated struct FilterJob: @unchecked Sendable {
     var visualizesPointColor = -1
     /// Option-drag on Sharpening Masking. Preview only.
     var showsSharpenMask = false
+    /// Displace's map, rendered from another layer at document size when the panel picks it.
+    var displacement: CGImage? = nil
 }
 
 nonisolated enum PixelFilter {
@@ -250,6 +260,7 @@ nonisolated enum PixelFilter {
         case .desaturate: image = try settings.desaturate.apply(job.image)
         case .photoFilter: image = try settings.photoFilter.apply(job.image)
         case .channelMixer: image = try settings.channelMixer.apply(job.image)
+        case .colorLookup: image = try settings.colorLookup.apply(job.image)
         case .cameraRaw: image = try settings.cameraRaw.apply(job.image, clipping: job.cameraRawClipping, scale: job.scale, seed: job.seed,
                                                                 visualizePointColor: job.visualizesPointColor, sharpenMask: job.showsSharpenMask)
         // Grain sits in layer pixels; the job's seed gives each application its own pattern.
@@ -388,6 +399,16 @@ nonisolated enum PixelFilter {
                 "inputTime": 4.0,
             ])
             image = try PixelAdjust.render(rippled.cropped(to: extent), width: width, height: height, isMask: false)
+        case .displace:
+            // Without a map there is nothing to push pixels around; the panel's picker provides one.
+            guard let map = job.displacement else { return job.image }
+            let mapImage = CIImage(cgImage: map).transformed(by: CGAffineTransform(
+                scaleX: CGFloat(width) / CGFloat(map.width), y: CGFloat(height) / CGFloat(map.height)))
+            let displaced = edges.applyingFilter("CIDisplacementDistortion", parameters: [
+                "inputDisplacementImage": mapImage.clampedToExtent(),
+                kCIInputScaleKey: settings.displaceScale * 2 * job.scale,
+            ])
+            image = try PixelAdjust.render(displaced.cropped(to: extent), width: width, height: height, isMask: false)
         }
         guard let selection = job.selection else { return image }
         return try PixelAdjust.blend(image, over: job.image, through: selection, pixelToDocument: job.mapping, isMask: false)
@@ -468,6 +489,8 @@ final class FilterEdit {
     @ObservationIgnored var canvas: CGRect?
     /// The layer had no pixels yet (an empty layer); the filter started it from clear ones.
     @ObservationIgnored var startedEmpty = false
+    /// Displace's map: another layer's pixels rendered at document size, re-rendered when the picker changes it.
+    @ObservationIgnored var displacementMap: CGImage?
     @ObservationIgnored var preparedPreview: CGImage?
     /// Reject a render started before the blur's padded pixel grid changed.
     @ObservationIgnored var previewSourceVersion: UInt64 = 0
@@ -590,6 +613,7 @@ final class FilterEdit {
         job.showsHighlightClipping = showsHighlightClipping
         job.visualizesPointColor = pointColorVisualizeIndex
         job.showsSharpenMask = cameraRawSharpenMask
+        job.displacement = displacementMap
         return job
     }
 }
@@ -629,10 +653,38 @@ extension EditorSession {
                 : fillsCanvas ? canvas : nil
             let edit = try FilterEdit(kind: kind, layer: layer, selection: selection?.clip(canvas: document.size), settings: settings, growingTo: area)
             if fillsCanvas { edit.canvas = canvas }
+            // Displace starts from the nearest raster layer below the active one, if the document has one.
+            if kind == .displace {
+                let maps = document.layers.enumerated().filter { $0.element.asset != nil && !$0.element.isGroup && $0.element.id != layer.id }
+                let below = (0..<document.layers.count).reversed().filter { document.layers[$0].id == layer.id }.first ?? -1
+                let pick = maps.last { $0.offset < below }?.element ?? maps.last?.element
+                settings.displaceMapLayerID = pick?.id
+                edit.settings = settings.normalized
+                if let pick { updateDisplaceMap(layerID: pick.id, into: edit, document: document) }
+            }
             edit.startedEmpty = startedEmpty
             filterEdit = edit
             updateFilter(edit.settings, preview: true)
         } catch { brushError = error.localizedDescription }
+    }
+
+    /// Renders the layer Displace maps from, as the canvas shows it at document size, and re-runs the preview.
+    func updateDisplaceMap(layerID: UUID?) {
+        guard let edit = filterEdit, edit.kind == .displace, let document else { return }
+        edit.settings.displaceMapLayerID = layerID
+        updateDisplaceMap(layerID: layerID, into: edit, document: document)
+        updateFilter(edit.settings, preview: edit.preview)
+    }
+
+    private func updateDisplaceMap(layerID: UUID?, into edit: FilterEdit, document: CanvasDocument) {
+        guard let layerID, let layer = document.layers.first(where: { $0.id == layerID }), let image = layer.asset?.image,
+              let context = try? BrushRaster.context(width: document.width, height: document.height, mask: false) else {
+            edit.displacementMap = nil
+            return
+        }
+        let transform = displayedTransform(for: layer)
+        LayerRenderer.draw(image, transform: transform, center: transform.center, in: context)
+        edit.displacementMap = context.makeImage()
     }
 
     func updateFilter(_ settings: FilterSettings, preview: Bool) {

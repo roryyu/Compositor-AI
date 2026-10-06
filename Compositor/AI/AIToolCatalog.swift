@@ -172,7 +172,8 @@ nonisolated enum AIToolCatalog {
                        description: "Add an adjustment layer of the given kind above the active layer, optionally setting its parameters.",
                        parameters: .schema([
                         "kind": .stringProperty("Adjustment kind.",
-                                                enum: AdjustmentKind.allCases.map(\.rawValue)),
+                                                // Color Lookup needs a .cube file the agent cannot provide.
+                                                enum: AdjustmentKind.allCases.filter { $0 != .colorLookup }.map(\.rawValue)),
                         "params": .object([
                             "type": .string("object"),
                             "description": .string("Optional parameters; which keys apply depends on kind. Hue/Saturation: hue, saturation, lightness. Exposure: exposure. Grain: amount (0-100). Add Noise: amount (0.1-400). Gaussian Blur: radius. Motion Blur: angle, distance. Vibrance: amount (-100 to 100), saturation. Shadows / Highlights: amount (shadows strength, 0-100). Posterize: amount (levels, 2-255). Threshold: amount (level, 0-255). Desaturate: amount (0-100). Photo Filter: hue (gel, 0-360), amount (density, 0-100)."),

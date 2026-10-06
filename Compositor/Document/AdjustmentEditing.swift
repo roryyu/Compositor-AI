@@ -40,7 +40,7 @@ extension EditorSession {
                 edit.settings = original.resolvedHSV
                 hueSaturation = edit
             case .curves, .exposure, .gradientMap, .grain, .blackWhite, .colorBalance, .gaussianBlur, .motionBlur, .addNoise,
-                    .vibrance, .shadowsHighlights, .posterize, .threshold, .desaturate, .photoFilter, .channelMixer:
+                    .vibrance, .shadowsHighlights, .posterize, .threshold, .desaturate, .photoFilter, .channelMixer, .colorLookup:
                 var settings = FilterSettings()
                 settings.curves = original.curves
                 settings.exposure = original.exposure
@@ -55,6 +55,7 @@ extension EditorSession {
                 settings.desaturate = original.desaturate
                 settings.photoFilter = original.photoFilter
                 settings.channelMixer = original.channelMixer
+                settings.colorLookup = original.colorLookup
                 settings.radius = original.gaussianRadius
                 settings.angle = original.resolvedMotionAngle
                 settings.distance = original.resolvedMotionDistance
@@ -84,7 +85,7 @@ extension EditorSession {
             guard let hueSaturation else { return nil }
             value.hsvSettings = hueSaturation.settings
         case .curves, .exposure, .gradientMap, .grain, .blackWhite, .colorBalance, .gaussianBlur, .motionBlur, .addNoise,
-                .vibrance, .shadowsHighlights, .posterize, .threshold, .desaturate, .photoFilter, .channelMixer:
+                .vibrance, .shadowsHighlights, .posterize, .threshold, .desaturate, .photoFilter, .channelMixer, .colorLookup:
             guard let filterEdit else { return nil }
             switch value.kind {
             case .exposure: value.exposure = filterEdit.settings.exposure
@@ -99,6 +100,7 @@ extension EditorSession {
             case .desaturate: value.desaturate = filterEdit.settings.desaturate
             case .photoFilter: value.photoFilter = filterEdit.settings.photoFilter
             case .channelMixer: value.channelMixer = filterEdit.settings.channelMixer
+            case .colorLookup: value.colorLookup = filterEdit.settings.colorLookup
             case .gaussianBlur: value.gaussianRadius = filterEdit.settings.radius
             case .motionBlur:
                 value.resolvedMotionAngle = filterEdit.settings.angle

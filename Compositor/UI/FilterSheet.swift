@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 /// The open filter's panel: its settings, Preview, and Cancel / OK.
 struct FilterSheet: View {
@@ -12,6 +13,12 @@ struct FilterSheet: View {
     }
 
     private var isCameraRaw: Bool { edit?.kind == .cameraRaw }
+
+    /// Displace's map choices: the document's raster layers other than the one being filtered.
+    private var displaceMapLayers: [ImageLayer] {
+        guard let edit, let layers = session.document?.layers else { return [] }
+        return layers.filter { $0.asset != nil && !$0.isGroup && $0.id != edit.layerID }
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -84,16 +91,45 @@ struct FilterSheet: View {
                 control("Red", \.channelMixer.redRed, range: ChannelMixerSettings.range, unit: "%", decimals: 0, logarithmic: false)
                 control("Green", \.channelMixer.redGreen, range: ChannelMixerSettings.range, unit: "%", decimals: 0, logarithmic: false)
                 control("Blue", \.channelMixer.redBlue, range: ChannelMixerSettings.range, unit: "%", decimals: 0, logarithmic: false)
+                control("Constant", \.channelMixer.redConstant, range: ChannelMixerSettings.range, unit: "%", decimals: 0, logarithmic: false)
                 Text("Green").font(.headline)
                 control("Red", \.channelMixer.greenRed, range: ChannelMixerSettings.range, unit: "%", decimals: 0, logarithmic: false)
                 control("Green", \.channelMixer.greenGreen, range: ChannelMixerSettings.range, unit: "%", decimals: 0, logarithmic: false)
                 control("Blue", \.channelMixer.greenBlue, range: ChannelMixerSettings.range, unit: "%", decimals: 0, logarithmic: false)
+                control("Constant", \.channelMixer.greenConstant, range: ChannelMixerSettings.range, unit: "%", decimals: 0, logarithmic: false)
                 Text("Blue").font(.headline)
                 control("Red", \.channelMixer.blueRed, range: ChannelMixerSettings.range, unit: "%", decimals: 0, logarithmic: false)
                 control("Green", \.channelMixer.blueGreen, range: ChannelMixerSettings.range, unit: "%", decimals: 0, logarithmic: false)
                 control("Blue", \.channelMixer.blueBlue, range: ChannelMixerSettings.range, unit: "%", decimals: 0, logarithmic: false)
-                Toggle("Monochrome", isOn: flag(\.channelMixer.monochrome))
+                control("Constant", \.channelMixer.blueConstant, range: ChannelMixerSettings.range, unit: "%", decimals: 0, logarithmic: false)
+                Toggle("Monochrome", isOn: Binding(
+                    get: { settings.channelMixer.monochrome },
+                    set: { on in
+                        update {
+                            $0.channelMixer.monochrome = on
+                            // Checking it from the untouched image starts from luminance-ish weights,
+                            // as Photoshop's does, rather than from a mix that changes nothing.
+                            if on && $0.channelMixer.isIdentity {
+                                $0.channelMixer.redRed = 40; $0.channelMixer.redGreen = 40; $0.channelMixer.redBlue = 20
+                            }
+                        }
+                    }))
                     .help("Send the Red row to all three channels, for a custom black-and-white conversion")
+            case .colorLookup:
+                HStack(spacing: 8) {
+                    Text("LUT").frame(minWidth: 60, alignment: .leading).fixedSize()
+                    Button("Choose…") { chooseLUT() }
+                    if settings.colorLookup.cube != nil {
+                        Text(settings.colorLookup.lutName).font(.callout).foregroundStyle(.secondary).lineLimit(1)
+                    }
+                    Spacer()
+                }
+                control("Intensity", \.colorLookup.intensity, range: ColorLookupSettings.intensityRange, unit: "%", decimals: 0, logarithmic: false)
+                    .disabled(settings.colorLookup.cube == nil)
+                if settings.colorLookup.cube == nil {
+                    Text("Choose a .cube 3D lookup table; its data is stored inside the document, as Photoshop does.")
+                        .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                }
             case .removeBackground:
                 Text("Hide the background behind a layer mask, keeping the foreground subjects. The pixels stay, so the background can be painted back at any time.")
                     .fixedSize(horizontal: false, vertical: true)
@@ -188,6 +224,15 @@ struct FilterSheet: View {
                 control("Angle", \.twirlAngle, range: -360...360, unit: "°", decimals: 0, logarithmic: false)
             case .ripple:
                 control("Scale", \.rippleScale, range: 0...100, unit: "", decimals: 0, logarithmic: false)
+            case .displace:
+                Picker("Map", selection: Binding(get: { settings.displaceMapLayerID },
+                                                 set: { new in session.updateDisplaceMap(layerID: new) })) {
+                    Text("None").tag(UUID?.none)
+                    ForEach(displaceMapLayers, id: \.id) { layer in Text(layer.name).tag(UUID?.some(layer.id)) }
+                }
+                control("Scale", \.displaceScale, range: 0...100, unit: "", decimals: 0, logarithmic: false)
+                Text("The map layer's red channel pushes pixels horizontally and its green vertically; neutral gray leaves them in place.")
+                    .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             }
             Toggle("Preview", isOn: Binding(get: { edit?.preview ?? true },
                                             set: { session.updateFilter(settings, preview: $0) }))
@@ -228,6 +273,34 @@ struct FilterSheet: View {
 
     private func flag(_ key: WritableKeyPath<FilterSettings, Bool>) -> Binding<Bool> {
         Binding(get: { settings[keyPath: key] }, set: { value in update { $0[keyPath: key] = value } })
+    }
+
+    /// Color Lookup's file chooser: parses the picked `.cube` right away and shows why it failed inline.
+    private func chooseLUT() {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [UTType(filenameExtension: "cube") ?? .plainText, .plainText]
+        panel.allowsMultipleSelection = false
+        panel.canChooseDirectories = false
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        do {
+            let lut = try CubeLUT.load(url: url)
+            edit?.previewError = nil
+            update {
+                $0.colorLookup.cube = lut.data
+                $0.colorLookup.dimension = lut.dimension
+                $0.colorLookup.lutName = url.deletingPathExtension().lastPathComponent
+            }
+        } catch let error as CubeLUT.Error {
+            edit?.previewError = switch error {
+            case .oneDimensional: "That is a 1D LUT; only 3D .cube tables are supported."
+            case .missingSize: "No LUT_3D_SIZE line found in that file."
+            case .unsupportedSize: "The table size is outside the supported 2–65 range."
+            case .truncatedTable: "The file has fewer samples than its declared size."
+            case .badValue: "The file contains values that could not be read."
+            }
+        } catch {
+            edit?.previewError = "The file could not be read."
+        }
     }
 
     /// A slider plus an exact field. Logarithmic sliders give the small values used most most of the travel.

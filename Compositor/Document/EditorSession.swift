@@ -4,7 +4,7 @@ import UniformTypeIdentifiers
 struct ImageLayer: Identifiable, Equatable {
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.id == rhs.id && lhs.name == rhs.name && lhs.isVisible == rhs.isVisible && lhs.transform == rhs.transform
-            && lhs.asset?.image === rhs.asset?.image && lhs.parentID == rhs.parentID && lhs.isGroup == rhs.isGroup && lhs.opacity == rhs.opacity && lhs.blendMode == rhs.blendMode && lhs.mask == rhs.mask && lhs.maskSourceID == rhs.maskSourceID && lhs.adjustment == rhs.adjustment && lhs.shape == rhs.shape && lhs.text == rhs.text && lhs.effects == rhs.effects
+            && lhs.asset?.image === rhs.asset?.image && lhs.parentID == rhs.parentID && lhs.isGroup == rhs.isGroup && lhs.opacity == rhs.opacity && lhs.blendMode == rhs.blendMode && lhs.mask == rhs.mask && lhs.maskSourceID == rhs.maskSourceID && lhs.adjustment == rhs.adjustment && lhs.shape == rhs.shape && lhs.path == rhs.path && lhs.text == rhs.text && lhs.effects == rhs.effects
     }
     let id: UUID
     var asset: ImportedImage?
@@ -21,6 +21,8 @@ struct ImageLayer: Identifiable, Equatable {
     var adjustment: LayerAdjustment?
     /// Set on layers the Shape tool made; see `liveShape`.
     var shape: LayerShape?
+    /// Set on layers the Pen tool made; see `livePath`.
+    var path: LayerPath?
     /// A stroke and drop shadow drawn around the layer, kept apart from its pixels.
     var effects: LayerEffects?
     var text: LayerText?
@@ -40,7 +42,7 @@ struct ImageLayer: Identifiable, Equatable {
         self.name = name
     }
 
-    init(id: UUID, asset: ImportedImage?, name: String, isVisible: Bool, transform: LayerTransform, parentID: UUID? = nil, isGroup: Bool = false, opacity: Double = 1, blendMode: LayerBlendMode = .normal, mask: LayerMask? = nil, maskSourceID: UUID? = nil, adjustment: LayerAdjustment? = nil, shape: LayerShape? = nil, effects: LayerEffects? = nil, text: LayerText? = nil) {
+    init(id: UUID, asset: ImportedImage?, name: String, isVisible: Bool, transform: LayerTransform, parentID: UUID? = nil, isGroup: Bool = false, opacity: Double = 1, blendMode: LayerBlendMode = .normal, mask: LayerMask? = nil, maskSourceID: UUID? = nil, adjustment: LayerAdjustment? = nil, shape: LayerShape? = nil, path: LayerPath? = nil, effects: LayerEffects? = nil, text: LayerText? = nil) {
         self.id = id
         self.asset = asset
         self.name = name
@@ -54,6 +56,7 @@ struct ImageLayer: Identifiable, Equatable {
         self.maskSourceID = maskSourceID
         self.adjustment = adjustment
         self.shape = shape
+        self.path = path
         self.effects = effects
         self.text = text
     }
@@ -88,15 +91,15 @@ struct CanvasDocument: Equatable {
 }
 
 enum NavigationTool: String, CaseIterable {
-    case move, marquee, lasso, wand, crop, brush, spotHealing, cloneStamp, blur, gradient, shape, type, eyedropper, hand, zoom
+    case move, marquee, lasso, wand, crop, brush, spotHealing, cloneStamp, blur, gradient, shape, pen, type, eyedropper, hand, zoom
     /// No tool (A): nothing in the tool rail is selected and canvas clicks do nothing.
     case idle
     /// Tools that paint with the brush tip, sharing its size, hardness, opacity, and keys.
     var isBrushTool: Bool { self == .brush || self == .spotHealing || self == .cloneStamp || self == .blur }
     /// Tools that draw and edit selections, sharing modifiers, moving, and nudging.
     var isSelectionTool: Bool { self == .marquee || self == .lasso || self == .wand }
-    var symbol: String { self == .type ? "textformat" : self == .eyedropper ? "eyedropper" : self == .marquee ? "rectangle.dashed" : self == .lasso ? "lasso" : self == .wand ? "wand.and.stars" : self == .brush ? "paintbrush.pointed" : self == .spotHealing ? "bandage" : self == .cloneStamp ? "seal" : self == .blur ? "drop" : self == .gradient ? "square.bottomhalf.filled" : self == .shape ? "square.on.circle" : self == .crop ? "crop" : self == .move ? "arrow.up.left.and.arrow.down.right" : self == .hand ? "hand.draw" : "magnifyingglass" }
-    var label: String { self == .type ? "Type (T)" : self == .eyedropper ? "Eyedropper (I)" : self == .marquee ? "Marquee (M)" : self == .lasso ? "Lasso (L)" : self == .wand ? "Magic (W) · Tab switches Wand and Object" : self == .brush ? "Brush (B) · Eraser (E)" : self == .spotHealing ? "Spot Healing Brush (J)" : self == .cloneStamp ? "Clone Stamp (S) · Option-click sets the source" : self == .blur ? "Smear (R)" : self == .gradient ? "Gradient (G)" : self == .shape ? "Shape (U) · Shift-U switches Rectangle/Ellipse" : self == .crop ? "Crop (C)" : self == .move ? "Move / Transform (V)" : self == .hand ? "Hand (H)" : "Zoom (Z)" }
+    var symbol: String { self == .type ? "textformat" : self == .eyedropper ? "eyedropper" : self == .marquee ? "rectangle.dashed" : self == .lasso ? "lasso" : self == .wand ? "wand.and.stars" : self == .brush ? "paintbrush.pointed" : self == .spotHealing ? "bandage" : self == .cloneStamp ? "seal" : self == .blur ? "drop" : self == .gradient ? "square.bottomhalf.filled" : self == .shape ? "square.on.circle" : self == .pen ? "pen.tip" : self == .crop ? "crop" : self == .move ? "arrow.up.left.and.arrow.down.right" : self == .hand ? "hand.draw" : "magnifyingglass" }
+    var label: String { self == .type ? "Type (T)" : self == .eyedropper ? "Eyedropper (I)" : self == .marquee ? "Marquee (M)" : self == .lasso ? "Lasso (L)" : self == .wand ? "Magic (W) · Tab switches Wand and Object" : self == .brush ? "Brush (B) · Eraser (E)" : self == .spotHealing ? "Spot Healing Brush (J)" : self == .cloneStamp ? "Clone Stamp (S) · Option-click sets the source" : self == .blur ? "Smear (R)" : self == .gradient ? "Gradient (G)" : self == .shape ? "Shape (U) · Shift-U switches Rectangle/Ellipse" : self == .pen ? "Pen (P) · Click to add anchors, Enter to finish, Esc to cancel" : self == .crop ? "Crop (C)" : self == .move ? "Move / Transform (V)" : self == .hand ? "Hand (H)" : "Zoom (Z)" }
 }
 
 @Observable
@@ -150,7 +153,7 @@ final class EditorSession {
     private var fileRequestWaiters: [CheckedContinuation<Void, Never>] = []
     var canStartProjectOperation: Bool {
         _ = showsBusy // Re-evaluate in the UI when a long operation starts or ends.
-        return selectionAmountOperation == nil && textDraft == nil && !isProjectBusy && !isImporting && brushStroke == nil && warpStroke == nil && levels == nil && !showsNewDocument && !showsImporter && renamingLayerID == nil && importError == nil && adjustmentEditingID == nil && !showsConversionSheet
+        return selectionAmountOperation == nil && textDraft == nil && !isProjectBusy && !isImporting && brushStroke == nil && warpStroke == nil && toneStroke == nil && levels == nil && !showsNewDocument && !showsImporter && renamingLayerID == nil && importError == nil && adjustmentEditingID == nil && !showsConversionSheet
     }
     func waitForFileRequest() async {
         while !canStartProjectOperation {
@@ -205,11 +208,25 @@ final class EditorSession {
     var brushSettings = BrushSettings() { didSet { refreshGradient() } }
     var spotHealingMode: SpotHealingMode = .contentAware
     var blurMode: BlurToolMode = .liquify
-    /// The Brush's two modes: Paint lays down the foreground color, Erase clears pixels away (B and E).
+    /// Mixer Brush (Blur tool, Mix mode): how wet the brush is (0 = pure loaded color, 100 = picks up
+    /// the canvas) and how much of the canvas color mixes into what it lays down. Persisted per person.
+    var mixWet = ToolDefaults.double("mixWet", 50) { didSet { ToolDefaults.set(mixWet, "mixWet") } }
+    var mixRatio = ToolDefaults.double("mixRatio", 50) { didSet { ToolDefaults.set(mixRatio, "mixRatio") } }
+    /// The Brush's modes: Paint lays down the foreground color, Erase clears pixels away, and Dodge /
+    /// Burn / Sponge re-tone what is already there (B and E switch between the first two).
     var brushMode: BrushToolMode = .paint
+    /// Which tones the Brush's Dodge / Burn / Sponge modes reach.
+    var toneRange: ToneRange = .midtones
     /// The tool rail's icon, which follows the mode a tool is in.
     func symbol(for tool: NavigationTool) -> String {
-        tool == .brush && brushMode == .erase ? "eraser" : tool.symbol
+        guard tool == .brush else { return tool.symbol }
+        switch brushMode {
+        case .erase: return "eraser"
+        case .dodge: return "sun.max"
+        case .burn: return "sun.min"
+        case .sponge: return "drop.circle"
+        case .paint: return tool.symbol
+        }
     }
     /// The Magic tool's two modes: Wand selects by color, Object traces the object under the pointer (Tab).
     var wandMode: WandMode = .wand
@@ -240,6 +257,13 @@ final class EditorSession {
     var shapeLineWidth: Double = 4
     /// The shape being dragged out with the Shape tool, before it becomes a layer.
     var shapeDraft: ShapeDraft?
+    /// The path being drawn with the Pen tool, before it becomes a layer.
+    var penDraft: PathDraft?
+    /// An in-progress edit of an existing path layer's anchors.
+    var pathEdit: PathEdit?
+    /// Whether the Pen tool strokes its path (on) or fills it (off), and the stroke's thickness.
+    var penStroked = false
+    var penLineWidth: Double = 2
     var selectionModeChoice = SelectionMode.replace
     /// Mode implied by the Shift/Option keys currently held, nil when neither is.
     var heldSelectionMode: SelectionMode?
@@ -292,6 +316,8 @@ final class EditorSession {
     @ObservationIgnored var brushStroke: BrushStroke? { didSet { resumeFileRequests() } }
     /// A Smudge or Liquify stroke in progress.
     @ObservationIgnored var warpStroke: WarpStroke? { didSet { resumeFileRequests() } }
+    /// A Dodge, Burn, or Sponge stroke in progress.
+    @ObservationIgnored var toneStroke: ToneStroke? { didSet { resumeFileRequests() } }
 
     var canTransform: Bool {
         guard canEditLayers else { return false }
@@ -327,14 +353,14 @@ final class EditorSession {
     func selectLayer(_ id: UUID?) {
         effectSelection = nil
         if id != activeLayerID, !finishText() { return }
-        guard brushStroke == nil, warpStroke == nil, levels == nil else { return }
+        guard brushStroke == nil, warpStroke == nil, toneStroke == nil, levels == nil else { return }
         if id != activeLayerID { commitTransform(); resolveGradient() }
         activeLayerID = id
     }
     func selectTool(_ value: NavigationTool) {
         if tool != value, !finishText() { return }
-        guard !isProjectBusy, brushStroke == nil, warpStroke == nil, levels == nil else { return }
-        if tool != value { commitTransform(); cancelCrop(); resolveGradient(); cancelLasso(); cancelShape() }
+        guard !isProjectBusy, brushStroke == nil, warpStroke == nil, toneStroke == nil, levels == nil else { return }
+        if tool != value { commitTransform(); cancelCrop(); resolveGradient(); cancelLasso(); cancelShape(); cancelPen(); cancelPathEdit() }
         let from = Self.tipFamily(tool), to = Self.tipFamily(value)
         if from != to, let parked = parkedBrushTips[to] {
             parkedBrushTips[from] = (brushSettings.diameter, brushSettings.hardness, brushSettings.opacity)
@@ -361,7 +387,7 @@ final class EditorSession {
     /// Tab steps the current tool through its own modes — the setting sitting at the left of its tool bar. Tools
     /// without modes (Move, Crop, Type, Eyedropper, Hand, Zoom) ignore it.
     func cycleToolMode() {
-        guard !isProjectBusy, brushStroke == nil, warpStroke == nil else { return }
+        guard !isProjectBusy, brushStroke == nil, warpStroke == nil, toneStroke == nil else { return }
         func next<T: CaseIterable & Equatable>(_ value: T) -> T where T.AllCases.Index == Int {
             let all = Array(T.allCases)
             let index = all.firstIndex(of: value) ?? 0
@@ -372,7 +398,7 @@ final class EditorSession {
         case .wand: wandMode = next(wandMode)
         case .lasso: toggleLassoKind()
         case .shape: toggleShapeKind()
-        case .brush: brushMode = next(brushMode)
+        case .brush: brushMode = brushMode == .paint ? .erase : .paint   // cycling stays between the two painting modes
         case .blur: blurMode = next(blurMode)
         case .spotHealing: spotHealingMode = next(spotHealingMode)
         case .cloneStamp: cloneSettings.sampleAllLayers.toggle()
@@ -449,6 +475,7 @@ final class EditorSession {
                 }
                 document?.layers[index].transform = moved
                 redrawShape(at: index)
+                redrawPath(at: index)
             }
             endEdit()
             return
@@ -460,6 +487,7 @@ final class EditorSession {
         }
         document?.layers[index].transform = edit.draft
         redrawShape(at: index)
+        redrawPath(at: index)
         endEdit()
     }
     func cancelTransform() {
@@ -568,7 +596,7 @@ final class EditorSession {
     var isModified: Bool { history.isModified }
     var canUseHistory: Bool {
         _ = showsBusy
-        return selectionAmountOperation == nil && textDraft == nil && !isProjectBusy && !isImporting && brushStroke == nil && warpStroke == nil && levels == nil && !showsNewDocument && !showsImporter && renamingLayerID == nil && importError == nil && transformEdit == nil && !showsConversionSheet
+        return selectionAmountOperation == nil && textDraft == nil && !isProjectBusy && !isImporting && brushStroke == nil && warpStroke == nil && toneStroke == nil && levels == nil && !showsNewDocument && !showsImporter && renamingLayerID == nil && importError == nil && transformEdit == nil && !showsConversionSheet
     }
     var canUndo: Bool { canUseHistory && (history.canUndo || gradientEdit != nil) }
     var canRedo: Bool { canUseHistory && history.canRedo }
@@ -605,7 +633,7 @@ final class EditorSession {
     var activeLayer: ImageLayer? { document?.layers.first { $0.id == activeLayerID } }
     var canEditLayers: Bool {
         _ = showsBusy
-        return selectionAmountOperation == nil && textDraft == nil && document != nil && brushStroke == nil && warpStroke == nil && !isProjectBusy && !isImporting && !showsNewDocument && !showsImporter && renamingLayerID == nil && transformEdit == nil && cropRect == nil && gradientEdit == nil && pixelMove == nil && hueSaturation == nil && levels == nil && filterEdit == nil && adjustmentEditingID == nil
+        return selectionAmountOperation == nil && textDraft == nil && document != nil && brushStroke == nil && warpStroke == nil && toneStroke == nil && !isProjectBusy && !isImporting && !showsNewDocument && !showsImporter && renamingLayerID == nil && transformEdit == nil && cropRect == nil && gradientEdit == nil && pixelMove == nil && hueSaturation == nil && levels == nil && filterEdit == nil && adjustmentEditingID == nil
     }
 
     func addBlankLayer(name suppliedName: String? = nil) {

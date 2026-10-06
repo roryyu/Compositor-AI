@@ -49,7 +49,7 @@ $B call draw_shape '{"kind":"Ellipse","rect":[0,0,50,50],"color":"black"}'
 
 **Select:** `set_selection` (all|rect|ellipse, rect, feather) · `modify_selection` (invert|deselect|expand|contract|feather, amount in px) · `content_aware_fill` (fills the current selection from its surroundings) · `select_subject`
 
-**Effects:** `apply_filter` (Gaussian Blur, Motion Blur, Add Noise, Vignette, Bloom / Glow, Tonal Contrast, Lens Correction, Remove Background, Sharpen, Unsharp Mask, Box Blur, Disc Blur, Tilt-Shift, Zoom Blur, Pixelate, Crystallize, Pointillize, Twirl, Ripple — with radius/angle/distance/amount/distortion as applicable) · `apply_adjustment` (adds an adjustment layer: any adjustment kind, optional params hue/saturation/lightness/exposure/amount/radius/angle/distance) · `flip` (canvas|layers, horizontal|vertical)
+**Effects:** `apply_filter` (Gaussian Blur, Motion Blur, Add Noise, Vignette, Bloom / Glow, Tonal Contrast, Lens Correction, Remove Background, Sharpen, Unsharp Mask, Box Blur, Disc Blur, Tilt-Shift, Zoom Blur, Pixelate, Crystallize, Pointillize, Twirl, Ripple — with radius/angle/distance/amount/distortion as applicable; Displace is UI-only, since it needs another layer as its map) · `apply_adjustment` (adds an adjustment layer: any adjustment kind, optional params hue/saturation/lightness/exposure/amount/radius/angle/distance; Color Lookup is UI-only, since it needs a `.cube` file) · `flip` (canvas|layers, horizontal|vertical)
 
 **AI:** `analyze_image` (target canvas|active_layer, question in English — needs the vision model configured) · `generate_image` (prompt in English — needs the image model configured; inserts as a new centered layer)
 

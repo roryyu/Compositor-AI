@@ -10,6 +10,7 @@ nonisolated enum AdjustmentKind: String, Codable, CaseIterable, Sendable {
     case vibrance = "Vibrance", shadowsHighlights = "Shadows / Highlights"
     case posterize = "Posterize", threshold = "Threshold", desaturate = "Desaturate"
     case photoFilter = "Photo Filter", channelMixer = "Channel Mixer"
+    case colorLookup = "Color Lookup"
     var symbol: String {
         switch self {
         case .curves: return "point.topleft.down.to.point.bottomright.curvepath"
@@ -31,6 +32,7 @@ nonisolated enum AdjustmentKind: String, Codable, CaseIterable, Sendable {
         case .desaturate: return "drop"
         case .photoFilter: return "camera.filters"
         case .channelMixer: return "square.grid.3x3"
+        case .colorLookup: return "cube.box"
         }
     }
     /// The filter panel that edits this kind; Levels and Hue/Saturation have panels of their own.
@@ -48,6 +50,7 @@ nonisolated enum AdjustmentKind: String, Codable, CaseIterable, Sendable {
         case .desaturate: return .desaturate
         case .photoFilter: return .photoFilter
         case .channelMixer: return .channelMixer
+        case .colorLookup: return .colorLookup
         case .exposure: return .exposure
         case .gradientMap: return .gradientMap
         case .grain: return .grain
@@ -85,6 +88,7 @@ nonisolated struct LayerAdjustment: Codable, Equatable, Sendable {
     var desaturateSettings: DesaturateSettings?
     var photoFilterSettings: PhotoFilterSettings?
     var channelMixerSettings: ChannelMixerSettings?
+    var colorLookupSettings: ColorLookupSettings?
     // Optional so projects created before blur adjustments continue to decode unchanged.
     var blurRadius: Double?
     var motionAngle: Double?
@@ -141,6 +145,10 @@ nonisolated struct LayerAdjustment: Codable, Equatable, Sendable {
         get { channelMixerSettings ?? ChannelMixerSettings() }
         set { channelMixerSettings = newValue }
     }
+    var colorLookup: ColorLookupSettings {
+        get { colorLookupSettings ?? ColorLookupSettings() }
+        set { colorLookupSettings = newValue }
+    }
     var gaussianRadius: Double {
         get { blurRadius ?? 10 }
         set { blurRadius = newValue }
@@ -188,7 +196,7 @@ nonisolated struct LayerAdjustment: Codable, Equatable, Sendable {
         && levels.ranges.count == 4 && levels.ranges.allSatisfy { $0 == $0.normalized } && curves.isValid
         && exposure.isValid && gradientMap.isValid && grain.isValid && blackWhite.isValid && colorBalance.isValid
         && vibrance.isValid && shadowsHighlights.isValid && posterize.isValid && threshold.isValid
-        && desaturate.isValid && photoFilter.isValid && channelMixer.isValid
+        && desaturate.isValid && photoFilter.isValid && channelMixer.isValid && colorLookup.isValid
         && gaussianRadius.isFinite && (0.1...250).contains(gaussianRadius)
         && resolvedMotionAngle.isFinite && (-90...90).contains(resolvedMotionAngle)
         && resolvedMotionDistance.isFinite && (1...2000).contains(resolvedMotionDistance)
@@ -213,6 +221,7 @@ nonisolated struct LayerAdjustment: Codable, Equatable, Sendable {
         case .desaturate: return try desaturate.apply(image)
         case .photoFilter: return try photoFilter.apply(image)
         case .channelMixer: return try channelMixer.apply(image)
+        case .colorLookup: return try colorLookup.apply(image)
         case .exposure: return try exposure.apply(image)
         case .gradientMap: return try gradientMap.apply(image)
         case .grain:

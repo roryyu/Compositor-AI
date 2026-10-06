@@ -16,7 +16,7 @@ Because it’s open source, you can download the Xcode project and add, remove, 
 - Layers and folders, with opacity and Photoshop's full set of blend modes in its order — a folder's opacity dims everything inside it
 - Layer masks: paint, fill, invert, blur and feather them; link or unlink them to transform a mask on its own
 - Clipping masks and folder masks
-- Adjustment layers: Hue/Saturation, Levels, Curves, Exposure, Gradient Map, Grain, Black & White, Color Balance, Vibrance, Channel Mixer, Photo Filter, Shadows / Highlights, Desaturate, Posterize, Threshold, Invert, Gaussian Blur, Motion Blur and Noise
+- Adjustment layers: Hue/Saturation, Levels, Curves, Exposure, Gradient Map, Grain, Black & White, Color Balance, Vibrance, Channel Mixer, Color Lookup, Photo Filter, Shadows / Highlights, Desaturate, Posterize, Threshold, Invert, Gaussian Blur, Motion Blur and Noise
 - Layer effects: Stroke, Drop Shadow, Color Overlay, Inner Shadow, Outer Glow and Inner Glow, rendered on the GPU and editable at any time
 - Merge Down, Merge Layers and Merge Group (⌘E)
 - Duplicate, rename inline, reorder and nest by drag and drop; Option-drag to duplicate; a right-click menu in the Layers panel
@@ -41,17 +41,18 @@ Because it’s open source, you can download the Xcode project and add, remove, 
 - Brush with size, hardness, opacity and smoothing, in Paint or Erase mode (B and E), and Shift for straight lines
 - Spot Healing Brush (content-aware)
 - Clone Stamp, aligned or not, sampling one layer or all of them
-- Blur tool, on pixels or masks
-- Gradient tool and Shape tool (rectangles, rounded rectangles, ellipses and lines), which stay editable rather than being rasterized
+- Blur tool, on pixels or masks; Smear (Smudge / Liquify / Mix) — Mix is a mixer brush that loads the foreground color and blends it into what it strokes over
+- Dodge, Burn and Sponge, with a Shadows / Midtones / Highlights range, to lighten, darken or shift saturation where you paint
+- Gradient tool, Shape tool (rectangles, rounded rectangles, ellipses and lines) and Pen tool (fill or stroke paths with bezier handles), which stay editable rather than being rasterized; a path can also become a selection or be rasterized to plain pixels
 - Type tool (T): inline multiline editing in draggable, resizable paragraph boxes; font, size, color, alignment and spacing in the tool header; transform text and use it as a clipping mask
 - Eyedropper and a full color picker
 
 ### Adjustments and filters
 - Camera Raw filter: light, color, curves, color mixer, color grading, detail, optics and geometry, in a panel beside the canvas
-- Levels (with Auto), Curves, Hue/Saturation, Exposure, Gradient Map, Grain, Black & White, Color Balance, Vibrance, Channel Mixer, Photo Filter, Shadows / Highlights, Desaturate, Posterize, Threshold and Invert
+- Levels (with Auto), Curves, Hue/Saturation, Exposure, Gradient Map, Grain, Black & White, Color Balance, Vibrance, Channel Mixer, Color Lookup (a `.cube` 3D LUT), Photo Filter, Shadows / Highlights, Desaturate, Posterize, Threshold and Invert
 - Gaussian Blur and Motion Blur that spread past a layer's edges
 - Sharpen, Unsharp Mask, Box Blur, Disc Blur, Tilt-Shift and Zoom Blur
-- Pixelate, Crystallize and Pointillize; Twirl and Ripple distortions
+- Pixelate, Crystallize and Pointillize; Twirl, Ripple and Displace distortions (Displace pushes pixels around using another layer as its map)
 - Add Noise, Vignette, Bloom / Glow, Tonal Contrast, Lens Correction and Remove Background
 - Live previews, limited to the selection when there is one
 

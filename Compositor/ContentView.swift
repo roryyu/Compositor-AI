@@ -48,6 +48,10 @@ struct ContentView: View {
                 ShapeControls(session: session)
                 Divider()
             }
+            if session.tool == .pen {
+                PenControls(session: session)
+                Divider()
+            }
             if session.tool == .eyedropper {
                 HStack(spacing: 16) {
                     Text("Eyedropper").font(ToolHeaderStyle.titleFont)

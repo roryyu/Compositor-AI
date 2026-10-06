@@ -5,20 +5,27 @@ struct BrushControls: View {
     @Bindable var session: EditorSession
     var body: some View {
         HStack(spacing: 12) {
-            Text(session.tool == .spotHealing ? "Spot Healing" : session.tool == .cloneStamp ? "Clone Stamp" : session.tool == .blur ? "Smear" : session.brushMode == .erase ? "Eraser" : "Brush").font(ToolHeaderStyle.titleFont)
+            Text(session.tool == .spotHealing ? "Spot Healing" : session.tool == .cloneStamp ? "Clone Stamp" : session.tool == .blur ? "Smear" : session.brushMode.isTone ? session.brushMode.rawValue : session.brushMode == .erase ? "Eraser" : "Brush").font(ToolHeaderStyle.titleFont)
             if session.tool == .brush {
                 Picker("Mode", selection: $session.brushMode) {
                     ForEach(BrushToolMode.allCases, id: \.self) { Text($0.rawValue).tag($0) }
                 }
                 .pickerStyle(.segmented).labelsHidden().fixedSize()
-                .help("Paint with the foreground color (B), or erase pixels away (E)")
+                .help("Paint with the foreground color (B), erase pixels away (E), or re-tone what is there: Dodge lightens, Burn darkens, Sponge moves saturation")
+                if session.brushMode.isTone {
+                    Picker("Range", selection: $session.toneRange) {
+                        ForEach(ToneRange.allCases, id: \.self) { Text($0.rawValue).tag($0) }
+                    }
+                    .pickerStyle(.segmented).labelsHidden().fixedSize()
+                    .help("Which tones the brush reaches; the others are protected")
+                }
             }
             if session.tool == .blur {
                 Picker("Mode", selection: $session.blurMode) {
                     ForEach(BlurToolMode.allCases, id: \.self) { Text($0.rawValue).tag($0) }
                 }
                 .pickerStyle(.segmented).labelsHidden().fixedSize()
-                .help("Liquify pushes pixels · Blur softens · Smudge drags color along")
+                .help("Liquify pushes pixels · Blur softens · Smudge drags color along · Mix paints and blends like a Mixer Brush")
             }
             if session.tool == .spotHealing {
                 Picker("Type", selection: $session.spotHealingMode) {
@@ -57,7 +64,7 @@ struct BrushControls: View {
                 .arrowSteps(value: { Double(session.brushSettings.hardness * 100) },
                             change: { session.brushSettings.hardness = CGFloat(min(1, max(0, $0 / 100))) })
                 .unitSuffix("%")
-            Text(session.tool == .blur ? "Strength" : "Opacity")
+            Text(session.tool == .blur ? "Strength" : session.brushMode == .sponge ? "Flow" : session.brushMode.isTone ? "Exposure" : "Opacity")
             Slider(value: $session.brushSettings.opacity, in: 0.01...1).frame(width: 100)
             TextField("Opacity", value: Binding<Double>(get: { Double(session.brushSettings.opacity * 100) },
                 set: { session.brushSettings.opacity = $0.isFinite ? CGFloat(min(100, max(1, $0)) / 100) : 1 }),
@@ -67,6 +74,27 @@ struct BrushControls: View {
                             change: { session.brushSettings.opacity = CGFloat(min(100, max(1, $0)) / 100) })
                 .help("Press 1–9 for 10–90%, 0 for 100%")
                 .unitSuffix("%")
+            // Mixer Brush: how wet the brush is, and how much canvas color mixes into what it lays down.
+            if session.tool == .blur, session.blurMode == .mix {
+                Text("Wet")
+                Slider(value: $session.mixWet, in: 0...100).frame(width: 90)
+                TextField("Wet", value: Binding<Double>(get: { session.mixWet },
+                    set: { session.mixWet = $0.isFinite ? min(100, max(0, $0)) : 50 }),
+                    format: .number.precision(.fractionLength(0)))
+                    .frame(width: 42).textFieldStyle(.roundedBorder)
+                    .arrowSteps(value: { session.mixWet }, change: { session.mixWet = min(100, max(0, $0)) })
+                    .help("0 lays the loaded color alone; 100 picks the canvas color up as it travels")
+                    .unitSuffix("%")
+                Text("Mix")
+                Slider(value: $session.mixRatio, in: 0...100).frame(width: 90)
+                TextField("Mix", value: Binding<Double>(get: { session.mixRatio },
+                    set: { session.mixRatio = $0.isFinite ? min(100, max(0, $0)) : 50 }),
+                    format: .number.precision(.fractionLength(0)))
+                    .frame(width: 42).textFieldStyle(.roundedBorder)
+                    .arrowSteps(value: { session.mixRatio }, change: { session.mixRatio = min(100, max(0, $0)) })
+                    .help("How much of the color under the brush mixes into what it lays down")
+                    .unitSuffix("%")
+            }
             // Paint and Erase only: healing, cloning and smearing have their own feel.
             if session.tool == .brush {
                 Text("Smoothing")
@@ -84,7 +112,7 @@ struct BrushControls: View {
                     Text("Black · Hide").tag(false)
                     Text("White · Reveal").tag(true)
                 }.frame(width: 180)
-            } else if session.tool != .cloneStamp, session.tool != .blur {
+            } else if session.tool != .cloneStamp, session.tool != .blur || session.blurMode == .mix, !(session.tool == .brush && session.brushMode.isTone) {
                 // Same foreground color and Color Picker as the tool-rail swatch.
                 HStack(spacing: 6) {
                     Text("Color")

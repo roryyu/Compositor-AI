@@ -174,20 +174,23 @@ nonisolated struct PhotoFilterSettings: Codable, Equatable, Sendable {
     }
 }
 
-/// Channel Mixer: rebuilds each output channel as a weighted mix of the source channels, in percent.
-/// Monochrome sends the Red row to all three outputs for a black-and-white conversion. Core Image's
-/// `CIColorMatrix`; the identity mix (100/0/0, 0/100/0, 0/0/100) leaves the image unchanged.
+/// Channel Mixer: rebuilds each output channel as a weighted mix of the source channels, in percent,
+/// plus a constant offset per channel. Monochrome sends the Red row (and its constant) to all three
+/// outputs for a black-and-white conversion. Core Image's `CIColorMatrix`; the identity mix
+/// (100/0/0, 0/100/0, 0/0/100, no constants) leaves the image unchanged.
 nonisolated struct ChannelMixerSettings: Codable, Equatable, Sendable {
     static let range: ClosedRange<Double> = -200...200
     var redRed: Double = 100, redGreen: Double = 0, redBlue: Double = 0
     var greenRed: Double = 0, greenGreen: Double = 100, greenBlue: Double = 0
     var blueRed: Double = 0, blueGreen: Double = 0, blueBlue: Double = 100
+    var redConstant: Double = 0, greenConstant: Double = 0, blueConstant: Double = 0
     var monochrome = false
     private var rows: [[Double]] {
         [[redRed, redGreen, redBlue], [greenRed, greenGreen, greenBlue], [blueRed, blueGreen, blueBlue]]
     }
-    var isValid: Bool { rows.flatMap { $0 }.allSatisfy { $0.isFinite && Self.range.contains($0) } }
-    var isIdentity: Bool { !monochrome && rows == [[100, 0, 0], [0, 100, 0], [0, 0, 100]] }
+    private var constants: [Double] { [redConstant, greenConstant, blueConstant] }
+    var isValid: Bool { (rows.flatMap { $0 } + constants).allSatisfy { $0.isFinite && Self.range.contains($0) } }
+    var isIdentity: Bool { !monochrome && rows == [[100, 0, 0], [0, 100, 0], [0, 0, 100]] && constants == [0, 0, 0] }
     var normalized: Self {
         var result = self
         result.redRed = ImageAdjustmentPixels.clamp(redRed, Self.range, 100)
@@ -199,6 +202,9 @@ nonisolated struct ChannelMixerSettings: Codable, Equatable, Sendable {
         result.blueRed = ImageAdjustmentPixels.clamp(blueRed, Self.range, 0)
         result.blueGreen = ImageAdjustmentPixels.clamp(blueGreen, Self.range, 0)
         result.blueBlue = ImageAdjustmentPixels.clamp(blueBlue, Self.range, 100)
+        result.redConstant = ImageAdjustmentPixels.clamp(redConstant, Self.range, 0)
+        result.greenConstant = ImageAdjustmentPixels.clamp(greenConstant, Self.range, 0)
+        result.blueConstant = ImageAdjustmentPixels.clamp(blueConstant, Self.range, 0)
         return result
     }
     func apply(_ image: CGImage) throws -> CGImage {
@@ -210,12 +216,13 @@ nonisolated struct ChannelMixerSettings: Codable, Equatable, Sendable {
         func vector(_ mix: [Double]) -> CIVector {
             CIVector(x: CGFloat(mix[0] / 100), y: CGFloat(mix[1] / 100), z: CGFloat(mix[2] / 100), w: 0)
         }
+        let bias = monochrome ? [redConstant, redConstant, redConstant] : constants
         let output = input.applyingFilter("CIColorMatrix", parameters: [
             "inputRVector": vector(red),
             "inputGVector": vector(green),
             "inputBVector": vector(blue),
             "inputAVector": CIVector(x: 0, y: 0, z: 0, w: 1),
-            "inputBiasVector": CIVector(x: 0, y: 0, z: 0, w: 0),
+            "inputBiasVector": CIVector(x: CGFloat(bias[0] / 100), y: CGFloat(bias[1] / 100), z: CGFloat(bias[2] / 100), w: 0),
         ])
         return try PixelAdjust.render(output.cropped(to: input.extent), width: image.width, height: image.height, isMask: false)
     }

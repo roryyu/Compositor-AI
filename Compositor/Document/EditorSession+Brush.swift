@@ -28,6 +28,8 @@ extension EditorSession {
     func beginBrush(at point: CGPoint) {
         // Spot Healing and Clone Stamp rework image pixels; they have nothing to do on a mask.
         if tool == .blur, blurMode != .blur { beginWarp(at: point); return }
+        // Dodge / Burn / Sponge re-tone the layer's pixels instead of laying color down.
+        if tool == .brush, brushMode.isTone { beginTone(at: point); return }
         guard tool == .brush || tool == .blur || (tool.isBrushTool && !isMaskSelected), canPaint, let layer = activeLayer, let document else { return }
         var clone: (image: CGImage, offset: CGSize)?
         if tool == .cloneStamp {
@@ -64,6 +66,7 @@ extension EditorSession {
     }
     func continueBrush(at point: CGPoint) {
         if let warpStroke { warpStroke.append(point); lastBrushPoint?.point = point; brushRevision += 1; return }
+        if let toneStroke { toneStroke.append(point); lastBrushPoint?.point = point; brushRevision += 1; return }
         guard let brushStroke else { return }
         brushPointer = point
         guard let painted = smoothed(point) else { return }
@@ -92,6 +95,7 @@ extension EditorSession {
     }
     func cancelBrush() {
         warpStroke = nil
+        toneStroke = nil
         brushStroke = nil
         brushAnchor = nil
         brushPointer = nil
@@ -103,6 +107,11 @@ extension EditorSession {
         if warpStroke != nil {
             guard !isProjectBusy else { return false }
             finishWarp()
+            return true
+        }
+        if toneStroke != nil {
+            guard !isProjectBusy else { return false }
+            finishTone()
             return true
         }
         guard let stroke = brushStroke else { return true }

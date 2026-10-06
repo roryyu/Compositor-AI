@@ -50,6 +50,8 @@ nonisolated struct ProjectLayerRecord: Codable, Sendable {
     var maskLinked: Bool? = nil
     /// A shape layer's shape, drawn again when the layer is scaled. Older versions ignore it and keep the pixels.
     var shape: LayerShapeStyle? = nil
+    /// A path layer's pen path, drawn again when the layer is scaled. Older versions ignore it and keep the pixels.
+    var path: LayerPathStyle? = nil
     /// The stroke and drop shadow drawn around the layer.
     var effects: LayerEffects? = nil
     var text: LayerTextStyle? = nil
